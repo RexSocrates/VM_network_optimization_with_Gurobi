@@ -92,11 +92,11 @@ for timeStage in range(0, timeLength) :
                     contractDecVar_res[str(contractLength)] = paymentOptionDecVar_res
                     contractDecVar_uti[str(contractLength)] = paymentOptionDecVar_uti
                 
-                onDemandVar = model.addVar(lb=0.0, vtype=GRB.INFINITY)
+                onDemandVmVar = model.addVar(lb=0.0, vtype=GRB.INTEGER)
                 
                 vmDecVar_res[vmType] = contractDecVar_res
                 vmDecVar_uti[vmType] = contractDecVar_uti
-                vmDecVar_onDemand[vmType] = onDemandVar
+                vmDecVar_onDemand[vmType] = onDemandVmVar
             providerDecVar_res[provider] = vmDecVar_res
             providerDecVar_uti[provider] = vmDecVar_uti
             providerDecVar_onDemand[provider] = vmDecVar_onDemand
@@ -108,8 +108,60 @@ for timeStage in range(0, timeLength) :
     vmOnDemandDecVar.append(userDecVar_onDemand)
     
 
+numOfRouters = 50
 
 # Bandwidth decision variables
+bandResDecVar = []
+bandUtilizationDecVar = []
+bandOnDemandDecVar = []
+
+for timeStage in range(0, timeLength) :
+    bandUserDecVar_res = []
+    bandUserDecVar_uti = []
+    bandUserDecVar_onDemand = []
+    
+    for userIndex in range(0, numOfUsers) :
+        bandRouterDecVar_res = []
+        bandRouterDecVar_uti = []
+        bandRouterDecVar_onDemand = []
+        
+        for routerIndex in range(0, numOfRouters) :
+            bandContractDecVar_res = dict()
+            bandContractDecVar_uti = dict()
+            
+            for bandResContractIndex in range(2) :
+                bandResContractLengthList = [1, 3]
+                bandResContractLength = bandResContractLengthList[bandResContractIndex]
+                
+                bandPaymentOptionDecVar_res = dict()
+                bandPaymentOptionDecVar_uti = dict()
+                
+                for bandPaymentOptionIndex in range(3) :
+                    bandPaymentOptionList = ['No', 'Partial', 'All']
+                    bandPaymentOption = bandPaymentOptionList[bandPaymentOptionIndex]
+                    
+                    bandReservation = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS)
+                    bandUtilization = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS)
+                    
+                    bandPaymentOptionDecVar_res[bandPaymentOption] = bandReservation
+                    bandPaymentOptionDecVar_uti[bandPaymentOption] = bandUtilization
+                    
+                bandContractDecVar_res[str(bandResContractLength)] = bandPaymentOptionDecVar_res
+                bandContractDecVar_uti[str(bandResContractLength)] = bandPaymentOptionDecVar_uti
+            
+            bandOnDemand = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS)
+            
+            bandRouterDecVar_res.append(bandContractDecVar_res)
+            bandRouterDecVar_uti.append(bandContractDecVar_uti)
+            bandRouterDecVar_onDemand.append(bandOnDemand)
+        
+        bandUserDecVar_res.append(bandRouterDecVar_res)
+        bandUserDecVar_uti.append(bandRouterDecVar_uti)
+        bandUserDecVar_onDemand.append(bandRouterDecVar_onDemand)
+        
+    bandResDecVar.append(bandUserDecVar_res)
+    bandUtilizationDecVar.append(bandUserDecVar_uti)
+    bandOnDemandDecVar.append(bandUserDecVar_onDemand)
 
 # VM energy decision variables
 
