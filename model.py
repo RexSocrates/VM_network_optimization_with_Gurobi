@@ -1,38 +1,8 @@
 # Build gurobi model
 from readData import *
+from subFunctions import *
 from gurobipy import *
 import random
-
-# get the list of instance types 
-def getVmTypesList(instanceData) :
-    vmList = []
-    for item in instanceData :
-        instanceType = item.instanceType
-        if instanceType not in vmList :
-            vmList.append(instanceType)
-    return vmList
-
-# get the list of DCs
-def getProvidersList(instanceData) :
-    providerList = []
-    for item in instanceData :
-        provider = item.provider
-        if provider not in providerList :
-            providerList.append(provider)
-    return providerList
-
-# generate the demand for each instance type at each time period
-def demandGenerator(timeLength, userList, vmTypes) :
-    timeList = []
-    for time in range(0, timeLength) :
-        vmDemandForUsers = []
-        for user in userList :
-            vmDemandForSingleUser = dict()
-            for vm in vmTypes :
-                vmDemand = random.randint(10, 30)
-                vmDemandForSingleUser[vm] = vmDemand
-            vmDemandForUsers.append(vmDemandForSingleUser)
-        timeList.append(vmDemandForUsers)
             
 
 instanceData = readVirtualResourceFile()
@@ -164,6 +134,33 @@ for timeStage in range(0, timeLength) :
     bandOnDemandDecVar.append(bandUserDecVar_onDemand)
 
 # VM energy decision variables
+valueOfPUE = 1.58
+
+for timeStage in range(0, timeLength) :
+    userDecVar_uti = vmUtilizationDecVar[timeStage]
+    userDecVar_onDemand = vmOnDemandDecVar[timeStage]
+    for userIndex in range(0, numOfUsers) :
+        providerDecVar_uti = userDecVar_uti[userIndex]
+        providerDecVar_onDemand = userDecVar_onDemand[userIndex]
+        for providerIndex in range(0, len(providerList)) :
+            provider = providerList[providerIndex]
+            vmDecVar_uti = providerDecVar_uti[provider]
+            vmDecVar_onDemand = providerDecVar_onDemand[provider]
+            for vmTypeIndex in range(0, len(vmList)) :
+                vmType = vmList[vmTypeIndex]
+                contractDecVar_uti = vmDecVar_uti[vmType]
+                for contractIndex in range(2) :
+                    contractLengthList = [1, 3]
+                    contractLength = contractLengthList[contractIndex]
+                    paymentOptionDecVar_uti = contractDecVar_uti[str(contractLength)]
+                    for paymentOptionIndex in range(3) :
+                        paymentOptionList = ['No', 'Partial', 'All']
+                        paymentOption = paymentOptionList[paymentOptionIndex]
+                        
+                        utilizationVar = paymentOptionDecVar_uti[paymentOption]
+                        
+                    
+    
 
 # Network energy decision variables
 
