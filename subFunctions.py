@@ -32,3 +32,5 @@ def demandGenerator(timeLength, userList, vmTypes) :
             vmDemandForUsers.append(vmDemandForSingleUser)
         timeList.append(vmDemandForUsers)
     return timeList
+
+# sort the VM data accroding to the providers, VM types, contracts, payment options

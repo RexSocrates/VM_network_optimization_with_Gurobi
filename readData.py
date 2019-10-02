@@ -1,5 +1,6 @@
 from VMClass import *
 from EnergyPriceClass import *
+from CloudProviderClass import *
 import pandas as pd
 import numpy as np
 import csv
@@ -15,9 +16,9 @@ def readSampleFile(fileName) :
                 
     return rawData
     
-    
-def readVirtualResourceFile() :
-    rawData = readSampleFile('smallSample.csv')
+# read the VM data file and return the list of VM data
+def getVirtualResource() :
+    rawData = readSampleFile('goldenSample_VM.csv')
     
     rows = rawData[1:]
     
@@ -43,6 +44,31 @@ def readVirtualResourceFile() :
     
     return instanceData
 
+# read router bandwidth pricing data
+def getRouterBandwidthPrice() :
+    with open('goldenSample_router_bandwidth_pricing.csv', 'r', newline='', encoding='utf-8') as csvfile :
+        rows = csv.reader(csvfile)
+        
+        rowData = []
+        for row in rows :
+            rowData.append(row)
+        
+        routerData = []
+        
+        for row in row[1:] :
+            routerIndex = row[0]
+            contractLength = row[1]
+            paymentOption = row[2]
+            initialResFee = row[3]
+            utilizationFee = row[4]
+            onDemandFee = row[5]
+            
+            newRouterData = RouterClass(routerIndex, contractLength, paymentOption, initialResFee, utilizationFee, onDemandFee)
+            routerData.append(newRouterData)
+        
+        return routerData
+
+
 # read energy pricing data
 def readEnergyPricingFile(fileName) :
     areaList = ['us', 'ap', 'eu']
@@ -62,5 +88,45 @@ def readEnergyPricingFile(fileName) :
         energyPriceDict[area] = newAreaEnergyPricingData
     
     return energyPriceDict
-    
+
+
+# read the file of cloud provider capacity
+def getProviderCapacity() :
+    with open('goldenSample_provider_capacity.csv', 'r', newline='', encoding='utf-8') as csvfile :
+        rows = csv.reader(csvfile)
+
+        rowData = []
+        for row in rows :
+            rowData.append(row)
         
+        column = rowData[0]
+        cloudProviders = []
+        for data in rowData[1:] :
+            provider = row[0]
+            coresLimit = row[1]
+            memoryLimit = row[2]
+            storageLimit = row[3]
+            internalBandwidthLimit = row[4]
+            
+            newProvider = CloudProvider(provider, coresLimit, memoryLimit, storageLimit, internalBandwidthLimit)
+            cloudProviders.append(newProvider)
+        
+        return cloudProviders
+
+# read the network topology
+def getNetworkTopology() :
+    with open('goldenSample_network.csv', 'r', newline='', encoding='utf-8') as csvfile :
+        rows = csv.reader(csvfile)
+        
+        rowData = []
+        for row in rows :
+            rowData.append(row)
+        
+        networkDict = dict()
+        for row in rowData[1:] :
+            node = row[0]
+            edges = row[1:]
+            
+            networkDict[node] = edges
+        
+        return networkDict

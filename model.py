@@ -5,7 +5,7 @@ from gurobipy import *
 import random
             
 
-instanceData = readVirtualResourceFile()
+instanceData = getVirtualResource()
 vmList = getVmTypesList(instanceData)
 providerList = getProvidersList(instanceData)
 
