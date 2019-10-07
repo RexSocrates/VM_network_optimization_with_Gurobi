@@ -34,18 +34,42 @@ def demandGenerator(timeLength, userList, vmTypes) :
     return timeList
 
 # sort the VM data accroding to the providers, VM types, contracts, payment options
-def sortVM(instanceData) :
-    providerList = getProvidersList(instanceData)
-    vmTypeList = getVmTypesList(instanceData)
+def sortVM(instanceData, providerList, vmTypeList) :
     contractList = [1, 3]
     paymentOptionList = ['NoUpfront', 'PartialUpfront', 'AllUpfront']
     
-    newVmList = []
+    # store the sorted VM data
+    newVmList = dict()
     
     for provider in providerList :
+        vmTypesOfProvider = dict()
         for vmType in vmTypeList :
+            contractOfVmTypes = dict()
             for contractLength in contractList :
+                paymentOptionOfContract = dict()
                 for payment in paymentOptionList :
                     # find the instance data with specific configuration
                     for instance in instanceData :
-                        print()
+                        instanceProvider = instance.provider
+                        instanceType = instance.instanceType
+                        instanceContract = instance.contractLength
+                        instancePayment = instance.paymentOption
+                        
+                        if instanceProvider == provider and instanceType == vmType and instanceContract == contractLength and instancePayment == payment :
+                            paymentOptionOfContract[str(payment)] == instance
+                            break
+                contractOfVmTypes[str(contractLength)] = paymentOptionOfContract
+            vmTypesOfProvider[str(vmType)] = contractOfVmTypes
+        newVmList[str(provider)] = vmTypesOfProvider
+    return newVmList
+
+# define a function to return the cost of VM storage and bandwidth
+def getCostOfStorageBandBandwidth() :
+    storageCost = []
+    bandwidthCost = []
+
+
+
+
+
+                        

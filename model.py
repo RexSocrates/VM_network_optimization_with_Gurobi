@@ -4,16 +4,21 @@ from subFunctions import *
 from gurobipy import *
 import random
             
+# get instance data from csv file, get get the lists of vm types and cloud providers from instance data
 
 instanceData = getVirtualResource()
-vmList = getVmTypesList(instanceData)
 providerList = getProvidersList(instanceData)
+vmTypeList = getVmTypesList(instanceData)
 
 
 model = Model('VM_network_and_energy_optimization_model')
 
 timeLength = 500
 numOfUsers = 10
+
+sortedVmList = sortVM(instanceData, providerList, vmTypeList)
+vmCostDecVarList = []
+vmCostParameterList = []
 
 # decision variables
 
@@ -35,8 +40,8 @@ for timeStage in range(0, timeLength) :
             vmDecVar_res = dict()
             vmDecVar_uti = dict()
             vmDecVar_onDemand = dict()
-            for vmIndex in range(0, len(vmList)) :
-                vmType = vmList[vmIndex]
+            for vmIndex in range(0, len(vmTypeList)) :
+                vmType = vmTypeList[vmIndex]
                 contractDecVar_res = dict()
                 contractDecVar_uti = dict()
                 for contractIndex in range(2) :
@@ -45,7 +50,7 @@ for timeStage in range(0, timeLength) :
                     paymentOptionDecVar_res = dict()
                     paymentOptionDecVar_uti = dict()
                     for paymentOptionIndex in range(3) :
-                        paymentOptionsList = ['No', 'Partial', 'All']
+                        paymentOptionsList = ['NoUpfront', 'PartialUpfront', 'AllUpfront']
                         paymentOption = paymentOptionsList[paymentOptionIndex]
                         
                         # create a decision variable that represent the number of instance whose instance type is i
@@ -59,6 +64,10 @@ for timeStage in range(0, timeLength) :
                         paymentOptionDecVar_res[paymentOption] = reservationVar
                         paymentOptionDecVar_uti[paymentOption] = utilizationVar
                         
+                        # add decision variables to the list for computing the cost of using VM
+                        vmCostDecVarList.append(reservationVar)
+                        vmCostDecVarList.append(utilizationVar)
+                        
                     contractDecVar_res[str(contractLength)] = paymentOptionDecVar_res
                     contractDecVar_uti[str(contractLength)] = paymentOptionDecVar_uti
                 
@@ -67,6 +76,9 @@ for timeStage in range(0, timeLength) :
                 vmDecVar_res[vmType] = contractDecVar_res
                 vmDecVar_uti[vmType] = contractDecVar_uti
                 vmDecVar_onDemand[vmType] = onDemandVmVar
+                
+                vmCostDecVarList.append(onDemandVmVar)
+                
             providerDecVar_res[provider] = vmDecVar_res
             providerDecVar_uti[provider] = vmDecVar_uti
             providerDecVar_onDemand[provider] = vmDecVar_onDemand
@@ -79,6 +91,8 @@ for timeStage in range(0, timeLength) :
 
 
 # cost of VM
+
+
 
 
 numOfRouters = 50
