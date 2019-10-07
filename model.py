@@ -9,6 +9,7 @@ import random
 instanceData = getVirtualResource()
 providerList = getProvidersList(instanceData)
 vmTypeList = getVmTypesList(instanceData)
+storageAndBandwidthPrice = getCostOfStorageBandBandwidth()
 
 
 model = Model('VM_network_and_energy_optimization_model')
@@ -44,6 +45,10 @@ for timeStage in range(0, timeLength) :
                 vmType = vmTypeList[vmIndex]
                 contractDecVar_res = dict()
                 contractDecVar_uti = dict()
+                
+                # on-demand vm data
+                onDemandParameter = 0
+                
                 for contractIndex in range(2) :
                     contractLengthList = [1, 3]
                     contractLength = contractLengthList[contractIndex]
@@ -68,6 +73,32 @@ for timeStage in range(0, timeLength) :
                         vmCostDecVarList.append(reservationVar)
                         vmCostDecVarList.append(utilizationVar)
                         
+                        # vm data
+                        vmDictOfProvider = sortedVmList[str(provider)]
+                        contractDictOfVM = vmDictOfProvider[str(vmType)]
+                        paymentDictOfContract = contractDictOfVM[str(contractLength)]
+                        instanceTupleData = paymentDictOfContract[paymentOption]
+                        
+                        # get the initial reservation price and utilization price
+                        initialResFee = instanceTupleData.resFee
+                        utilizationFee = instanceTupleData.utilizeFee
+                        onDemandFee = instanceTupleData.onDemandFee
+                        
+                        # get the cost of storage and bandwidth of VM
+                        instanceStorageReq = instanceTupleData.storageReq
+                        instanceOutboundBandwidthReq = instanceTupleData.networkReq
+                        
+                        storageAndBandwidthPriceDict = storageAndBandwidthPrice[str(provider)]
+                        storagePrice = storageAndBandwidthPriceDict['storage']
+                        bandwidthPrice = storageAndBandwidthPriceDict['bandwidth']
+                        
+                        utilizationParameter = utilizationFee + storagePrice * instanceStorageReq + bandwidthPrice * instanceOutboundBandwidthReq
+                        onDemandParameter = onDemandFee + storagePrice * instanceStorageReq + bandwidthPrice * instanceOutboundBandwidthReq
+                        
+                        # add parameters of decision variables to the list
+                        vmCostParameterList.append(initialResFee)
+                        vmCostParameterList.append(utilizationParameter)
+                        
                     contractDecVar_res[str(contractLength)] = paymentOptionDecVar_res
                     contractDecVar_uti[str(contractLength)] = paymentOptionDecVar_uti
                 
@@ -78,6 +109,7 @@ for timeStage in range(0, timeLength) :
                 vmDecVar_onDemand[vmType] = onDemandVmVar
                 
                 vmCostDecVarList.append(onDemandVmVar)
+                vmCostParameterList.append(onDemandParameter)
                 
             providerDecVar_res[provider] = vmDecVar_res
             providerDecVar_uti[provider] = vmDecVar_uti

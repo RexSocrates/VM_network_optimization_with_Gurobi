@@ -61,15 +61,4 @@ def sortVM(instanceData, providerList, vmTypeList) :
                 contractOfVmTypes[str(contractLength)] = paymentOptionOfContract
             vmTypesOfProvider[str(vmType)] = contractOfVmTypes
         newVmList[str(provider)] = vmTypesOfProvider
-    return newVmList
-
-# define a function to return the cost of VM storage and bandwidth
-def getCostOfStorageBandBandwidth() :
-    storageCost = []
-    bandwidthCost = []
-
-
-
-
-
-                        
+    return newVmList                        
