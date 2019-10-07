@@ -34,3 +34,18 @@ def demandGenerator(timeLength, userList, vmTypes) :
     return timeList
 
 # sort the VM data accroding to the providers, VM types, contracts, payment options
+def sortVM(instanceData) :
+    providerList = getProvidersList(instanceData)
+    vmTypeList = getVmTypesList(instanceData)
+    contractList = [1, 3]
+    paymentOptionList = ['NoUpfront', 'PartialUpfront', 'AllUpfront']
+    
+    newVmList = []
+    
+    for provider in providerList :
+        for vmType in vmTypeList :
+            for contractLength in contractList :
+                for payment in paymentOptionList :
+                    # find the instance data with specific configuration
+                    for instance in instanceData :
+                        print()

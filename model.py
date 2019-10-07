@@ -76,7 +76,10 @@ for timeStage in range(0, timeLength) :
     vmResDecVar.append(userDecVar_res)
     vmUtilizationDecVar.append(userDecVar_uti)
     vmOnDemandDecVar.append(userDecVar_onDemand)
-    
+
+
+# cost of VM
+
 
 numOfRouters = 50
 
