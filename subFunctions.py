@@ -61,4 +61,37 @@ def sortVM(instanceData, providerList, vmTypeList) :
                 contractOfVmTypes[str(contractLength)] = paymentOptionOfContract
             vmTypesOfProvider[str(vmType)] = contractOfVmTypes
         newVmList[str(provider)] = vmTypesOfProvider
-    return newVmList                        
+    return newVmList    
+
+# sort the router accorging to the router, contract length and payment options
+def sortRouter(routerData) :
+    sortedRouterData = dict()
+    for routerIndex in range(len(routerData)) :
+        contractsOfRouterDict = dict()
+        contractLengthList = [5, 10]
+        for contractLengthIndex in range(2) :
+            contractLength = contractLengthList[contractLengthIndex]
+            
+            paymentsOfContractDict = dict()
+            
+            paymentList = ['No upfront', 'Partial upfront', 'All upfront']
+            for paymentIndex in range(3) :
+                payment = paymentList[paymentIndex]
+                
+                for router in routerData :
+                    routerSeries = router.routerIndex
+                    routerContractLength = router.contractLength
+                    routerPayment = router.paymentOption
+                    
+                    if routerSeries == routerIndex and routerContractLength == contractLength and routerPayment == payment :
+                        paymentsOfContractDict[str(payment)] = router
+                        break
+            contractsOfRouterDict[str(contractLength)] = paymentsOfContractDict
+        sortedRouterData[str(routerIndex)] = contractsOfRouterDict
+    return sortedRouterData
+
+
+
+
+
+                    
