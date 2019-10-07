@@ -10,12 +10,15 @@ instanceData = getVirtualResource()
 providerList = getProvidersList(instanceData)
 vmTypeList = getVmTypesList(instanceData)
 storageAndBandwidthPrice = getCostOfStorageBandBandwidth()
+networkTopology = getNetworkTopology()
 
 
 model = Model('VM_network_and_energy_optimization_model')
 
-timeLength = 500
-numOfUsers = 10
+timeLength = 3 * 365 * 24
+numOfUsers = len(networkTopology['user'])
+
+# Virtual Machines
 
 sortedVmList = sortVM(instanceData, providerList, vmTypeList)
 vmCostDecVarList = []
@@ -122,14 +125,16 @@ for timeStage in range(0, timeLength) :
     vmOnDemandDecVar.append(userDecVar_onDemand)
 
 
-# cost of VM
+# Bandwidth
+numOfRouters = len(networkTopology['router'])
+routerData = getRouterBandwidthPrice(networkTopology)
+sortedRouter = sortRouter(routerData)
 
+# record the cost of using network bandwidth
+bandwidthCostDecVarList = []
+bandwidthCostParameterList = []
 
-
-
-numOfRouters = 50
-
-# Bandwidth decision variables
+# decision variables
 bandResDecVar = []
 bandUtilizationDecVar = []
 bandOnDemandDecVar = []
@@ -148,15 +153,18 @@ for timeStage in range(0, timeLength) :
             bandContractDecVar_res = dict()
             bandContractDecVar_uti = dict()
             
+            # record the price of on-demand bandwidth price
+            routerOnDemandFee = 0
+            
             for bandResContractIndex in range(2) :
-                bandResContractLengthList = [1, 3]
+                bandResContractLengthList = [5, 10]
                 bandResContractLength = bandResContractLengthList[bandResContractIndex]
                 
                 bandPaymentOptionDecVar_res = dict()
                 bandPaymentOptionDecVar_uti = dict()
                 
                 for bandPaymentOptionIndex in range(3) :
-                    bandPaymentOptionList = ['No', 'Partial', 'All']
+                    bandPaymentOptionList = ['No upfront', 'Partial upfront', 'All upfront']
                     bandPaymentOption = bandPaymentOptionList[bandPaymentOptionIndex]
                     
                     bandReservation = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS)
@@ -164,6 +172,23 @@ for timeStage in range(0, timeLength) :
                     
                     bandPaymentOptionDecVar_res[bandPaymentOption] = bandReservation
                     bandPaymentOptionDecVar_uti[bandPaymentOption] = bandUtilization
+                    
+                    # add decision variables to the list
+                    bandwidthCostDecVarList.append(bandReservation)
+                    bandwidthCostDecVarList.append(bandUtilization)
+                    
+                    # add parameter to the list
+                    contractsOfRouter = sortedRouter[str(routerIndex)]
+                    paymentsOfContract = contractsOfRouter[str(bandResContractLength)]
+                    routerTupleData = paymentsOfContract[str(bandPaymentOption)]
+                    
+                    routerInitialResFee = routerTupleData.reservationFee
+                    routerUtilizationFee = routerTupleData.utilizationFee
+                    # update the price of on-demand bandwidth
+                    routerOnDemandFee = routerTupleData.onDemandFee
+                    
+                    bandwidthCostParameterList.append(routerInitialResFee)
+                    bandwidthCostParameterList.append(routerUtilizationFee)
                     
                 bandContractDecVar_res[str(bandResContractLength)] = bandPaymentOptionDecVar_res
                 bandContractDecVar_uti[str(bandResContractLength)] = bandPaymentOptionDecVar_uti
@@ -173,6 +198,13 @@ for timeStage in range(0, timeLength) :
             bandRouterDecVar_res.append(bandContractDecVar_res)
             bandRouterDecVar_uti.append(bandContractDecVar_uti)
             bandRouterDecVar_onDemand.append(bandOnDemand)
+            
+            # add on demand decision to the list
+            bandwidthCostDecVarList.append(bandOnDemand)
+            
+            # add on-demand price to the list
+            bandwidthCostParameterList.append(routerOnDemandFee)
+            
         
         bandUserDecVar_res.append(bandRouterDecVar_res)
         bandUserDecVar_uti.append(bandRouterDecVar_uti)
