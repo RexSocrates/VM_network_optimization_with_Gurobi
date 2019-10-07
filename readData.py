@@ -45,8 +45,10 @@ def getVirtualResource() :
     return instanceData
 
 # read router bandwidth pricing data
-def getRouterBandwidthPrice() :
+def getRouterBandwidthPrice(networkTopology) :
     with open('goldenSample_router_bandwidth_pricing.csv', 'r', newline='', encoding='utf-8') as csvfile :
+        routerEdgesList = networkTopology['router']
+        
         rows = csv.reader(csvfile)
         
         rowData = []
@@ -63,8 +65,13 @@ def getRouterBandwidthPrice() :
             utilizationFee = row[4]
             onDemandFee = row[5]
             
-            newRouterData = RouterClass(routerIndex, contractLength, paymentOption, initialResFee, utilizationFee, onDemandFee)
+            edges = routerEdgesList[routerIndex]
+            
+            newRouterData = RouterClass(routerIndex, contractLength, paymentOption, initialResFee, utilizationFee, onDemandFee, edges)
             routerData.append(newRouterData)
+            
+            if routerIndex >= len(routerEdgesList) :
+                break
         
         return routerData
 
@@ -123,11 +130,20 @@ def getNetworkTopology() :
             rowData.append(row)
         
         networkDict = dict()
+        networkDict['user'] = []
+        networkDict['provider'] = []
+        networkDict['router'] = []
+        
         for row in rowData[1:] :
             node = row[0]
             edges = row[1:]
             
-            networkDict[node] = edges
+            if node[0] == 'u' :
+                networkDict['user'].append(edges)
+            elif node[0] == 'p' :
+                networkDict['provider'].append(edges)
+            else :
+                networkDict['router'].append(edges)
         
         return networkDict
 
