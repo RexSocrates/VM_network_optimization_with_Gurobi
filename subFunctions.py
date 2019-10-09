@@ -19,6 +19,19 @@ def getProvidersList(instanceData) :
             providerList.append(provider)
     return providerList
 
+def getProviderAreaDict(instanceData) :
+    areaDict = dict()
+    for instance in instanceData :
+        instanceArea = instance.area
+        instanceProvider = instance.provider
+        if instanceArea not in areaDict :
+            areaDict[str(instanceArea)] = [instanceProvider]
+        else :
+            providerListOfArea = areaDict[str(instanceArea)]
+            if instanceProvider not in providerListOfArea :
+                providerListOfArea.append(instanceProvider)
+    return areaDict
+
 # generate the demand for each instance type at each time period
 def demandGenerator(timeLength, userList, vmTypes) :
     timeList = []
@@ -90,7 +103,23 @@ def sortRouter(routerData) :
         sortedRouterData[str(routerIndex)] = contractsOfRouterDict
     return sortedRouterData
 
-
+# sort energy price according to time, area
+def sortEnergyPrice(energyPriceDict, timeLength) :
+    sortedEnergyPrice = []
+    for timeStage in range(0, timeLength) :
+        sortedEnergyPrice = dict()
+    
+    for area in energyPriceDict :
+        energyPriceObj = energyPriceDict[area]
+        priceList = energyPriceObj.priceList
+        
+        for timeStage in range(0, timeLength) :
+            sortedEnergyPrice[timeStage][str(area)] = priceList[timeStage % len(priceList)]
+    return sortedEnergyPrice
+    
+        
+        
+        
 
 
 

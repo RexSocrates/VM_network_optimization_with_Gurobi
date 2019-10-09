@@ -77,9 +77,9 @@ def getRouterBandwidthPrice(networkTopology) :
 
 
 # read energy pricing data
-def readEnergyPricingFile(fileName) :
+def readEnergyPricingFile() :
     areaList = ['us', 'ap', 'eu']
-    dataframe = pd.read_csv(fileName)
+    dataframe = pd.read_csv('goldenSample_energyPrice.csv')
     
     energyPriceDict = dict()
     for areaIndex in range(0, len(areaList)) :
@@ -94,7 +94,7 @@ def readEnergyPricingFile(fileName) :
         
         energyPriceDict[area] = newAreaEnergyPricingData
     
-    return energyPriceDict
+    return energyPriceDict        
 
 
 # read the file of cloud provider capacity
