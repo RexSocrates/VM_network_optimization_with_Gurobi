@@ -59,19 +59,20 @@ def getRouterBandwidthPrice(networkTopology) :
         
         for row in row[1:] :
             routerIndex = row[0]
-            contractLength = row[1]
-            paymentOption = row[2]
-            initialResFee = row[3]
-            utilizationFee = row[4]
-            onDemandFee = row[5]
+            routerArea = row[1]
+            contractLength = row[2]
+            paymentOption = row[3]
+            initialResFee = row[4]
+            utilizationFee = row[5]
+            onDemandFee = row[6]
             
             edges = routerEdgesList[routerIndex]
             
-            newRouterData = RouterClass(routerIndex, contractLength, paymentOption, initialResFee, utilizationFee, onDemandFee, edges)
-            routerData.append(newRouterData)
-            
             if routerIndex >= len(routerEdgesList) :
                 break
+            else :
+                newRouterData = RouterClass(routerIndex, routerArea, contractLength, paymentOption, initialResFee, utilizationFee, onDemandFee, edges)
+                routerData.append(newRouterData)
         
         return routerData
 

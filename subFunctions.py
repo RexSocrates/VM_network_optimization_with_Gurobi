@@ -116,11 +116,22 @@ def sortEnergyPrice(energyPriceDict, timeLength) :
         for timeStage in range(0, timeLength) :
             sortedEnergyPrice[timeStage][str(area)] = priceList[timeStage % len(priceList)]
     return sortedEnergyPrice
+
+def getRouterAreaDict(routerData) :
+    areaDict = dict()
     
+    for router in routerData :
+        routerArea = router.routerArea
         
-        
-        
+        if str(routerArea) in areaDict :
+            areaRouterList = areaDict[str(routerArea)]
+            areaRouterList.append(router)
+        else :
+            areaRouterList = [router]
+            areaDict[str(routerArea)] = areaRouterList
+    return areaDict
 
 
 
-                    
+
+
