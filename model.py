@@ -308,9 +308,15 @@ routerEnergyConsumptionDecVarList = []
 routerStatusDecVarList = []
 routerOnDecVarList = []
 routerOffDecVarList = []
+routerBandwidthUsageDecVarList = []
 
+# a fully loaded router consume 3.84 KW
 fullyLoadedRouterEnergyConsumption = 3840
+idleRouterEnergyConsumption = 1000
+# assume that switch the state of router is the 5% of fully loaded energy consumption
 routerChangeStateEnergyConsumption = fullyLoadedRouterEnergyConsumption * 0.05
+# assume that the capacity of each router is 1 Gbps
+routerCapacity = 1.0
     
 # equation 9 the cost of energy consumption of network flow
 for timeStage in range(0, timeLength) :
@@ -318,12 +324,14 @@ for timeStage in range(0, timeLength) :
     areaRouterStatusDecVarDict = dict()
     areaRouterOnDecVarDict = dict()
     areaRouterOffDecVarDict = dict()
+    areaRouterBandwidthUsageDecVarDict = dict()
     for area in routerAreaDict :
         areaRouterList = routerAreaDict[area]
         routerEnergyConsumptionDecVarDict = dict()
         routerStatusDecVarDict = dict()
         routerOnDecVarDict = dict()
         routerOffDecVarDict = dict()
+        routerBandwidthUsageDecVarDict = dict()
         for router in areaRouterList :
             routerIndex = router.routerIndex
             
@@ -333,20 +341,25 @@ for timeStage in range(0, timeLength) :
             routerOn = model.addVar(vtype=GRB.BINARY)
             routerOff = model.addVar(vtype=GRB.BINARY)
             
+            routerBandwidthUsage = model.addVar(vtype=GRB.CONTINUOUS)
+            
             routerEnergyConsumptionDecVarDict[str(routerIndex)] = routerEnergyConsumption
             routerStatusDecVarDict[str(routerIndex)] = routerStatus
             routerOnDecVarDict[str(routerIndex)] = routerOn
             routerOffDecVarDict[str(routerIndex)] = routerOff
+            routerBandwidthUsageDecVarDict[str(routerIndex)] = routerBandwidthUsage
             
         areaRouterEnergyDecVarDict[str(area)] = routerEnergyConsumptionDecVarDict
         areaRouterStatusDecVarDict[str(area)] = routerStatusDecVarDict
         areaRouterOnDecVarDict[str(area)] = routerOnDecVarDict
         areaRouterOffDecVarDict[str(area)] = routerOffDecVarDict
+        areaRouterBandwidthUsageDecVarDict[str(area)] = routerBandwidthUsageDecVarDict
         
     routerEnergyConsumptionDecVarList.append(areaRouterEnergyDecVarDict)
     routerStatusDecVarList.append(areaRouterStatusDecVarDict)
     routerOnDecVarList.append(areaRouterOnDecVarDict)
     routerOffDecVarList.append(areaRouterOffDecVarDict)
+    routerBandwidthUsageDecVarList.append(areaRouterBandwidthUsageDecVarDict)
 
 
 # update model
@@ -528,18 +541,24 @@ for timeStage in range(0, timeLength) :
 '''
 
 # constraint 10, 11 : Router_On and Router_Off constraints
-routerStatusDecVarList = []
-routerOnDecVarList = []
-routerOffDecVarList = []
 for timeStage in range(0, timeLength) :
+    # constraint 10, 11, 12
     areaRouterStatusDecVarDict = routerStatusDecVarList[timeStage]
+    # constraint 10, 11
     areaRouterOnDecVarDict = routerOnDecVarList[timeStage]
     areaRouterOffDecVarDict = routerOffDecVarList[timeStage]
+    
+    # constraint 12
+    areaRouterEnergyConsumptionDecVarDict = routerEnergyConsumptionDecVarList[timeStage]
+    areaRouterBandwidthUsageDecVarDict = routerBandwidthUsageDecVarList[timeStage]
     for area in routerAreaDict :
         areaRouterList = routerAreaDict[area]
         routerStatusDecVarDict = areaRouterStatusDecVarDict[str(area)]
         routerOnDecVarDict = areaRouterOnDecVarDict[str(area)]
         routerOffDecVarDict = areaRouterOffDecVarDict[str(area)]
+        
+        routerEnergyConsumptionDecVarDict = areaRouterEnergyConsumptionDecVarDict[str(area)]
+        routerBandwidthUsageDecVarDict = areaRouterBandwidthUsageDecVarDict[str(area)]
         for router in areaRouterList :
             routerIndex = router.routerIndex
             
@@ -547,6 +566,10 @@ for timeStage in range(0, timeLength) :
             routerOn = routerOnDecVarDict[str(routerIndex)]
             routerOff = routerOffDecVarDict[str(routerIndex)]
             
+            routerEnergyConsumption = routerEnergyConsumptionDecVarDict[str(routerIndex)]
+            routerBandwidthUsage = routerBandwidthUsageDecVarDict[str(routerIndex)]
+            
+            # constraint 10, 11
             if timeStage == 0 :
                 model.addConstr(routerOn, GRB.GREATER_EQUAL, routerStatus)
                 model.addConstr(routerOff, GRB.GREATER_EQUAL, -1 * routerStatus)
@@ -557,9 +580,29 @@ for timeStage in range(0, timeLength) :
                 
                 model.addConstr(routerOn, GRB.GREATER_EQUAL, routerStatus - previousTimeStageRouterStatus)
                 model.addConstr(routerOff, GRB.GREATER_EQUAL, previousTimeStageRouterStatus - routerStatus)
+            
+            # constraint 12
+            model.addConstr(routerEnergyConsumption, GRB.EQUAL, routerStatus * idleRouterEnergyConsumption + routerBandwidthUsage / (2 * routerCapacity) * (fullyLoadedRouterEnergyConsumption - idleRouterEnergyConsumption))
                 
+# constraint 12 : the energy consumption of a router
+'''
+for timeStage in range(0, timeLength) :
+    areaRouterEnergyConsumptionDecVarDict = routerEnergyConsumptionDecVarList[timeStage]
+    areaRouterStatusDecVarDict = routerStatusDecVarList[timeStage]
+    areaRouterBandwidthUsageDecVarDict = routerBandwidthUsageDecVarList[timeStage]
+    for area in routerAreaDict :
+        areaRouterList = routerAreaDict[area]
+        routerEnergyConsumptionDecVarDict = areaRouterEnergyConsumptionDecVarDict[str(area)]
+        routerStatusDecVarDict = areaRouterStatusDecVarDict[str(area)]
+        routerBandwidthUsageDecVarDict = areaRouterBandwidthUsageDecVarDict[str(area)]
+        for router in areaRouterList :
+            routerIndex = router.routerIndex
+            routerEnergyConsumption = routerEnergyConsumptionDecVarDict[str(routerIndex)]
+            routerStatus = routerStatusDecVarDict[str(routerIndex)]
+            routerBandwidthUsage = routerBandwidthUsageDecVarDict[str(routerIndex)]
             
-            
+            model.addConstr(routerEnergyConsumption, GRB.EQUAL, routerStatus * idleRouterEnergyConsumption + routerBandwidthUsage / (2 * routerCapacity) * (fullyLoadedRouterEnergyConsumption - idleRouterEnergyConsumption))
+'''
     
 
 
