@@ -361,6 +361,21 @@ for timeStage in range(0, timeLength) :
     routerOffDecVarList.append(areaRouterOffDecVarDict)
     routerBandwidthUsageDecVarList.append(areaRouterBandwidthUsageDecVarDict)
 
+# network flow decision variables
+edgeList = networkTopology['edges']
+
+edgeFlowDecVarList = []
+
+for timeStage in range(0, timeLength) :
+    edgeFlowDecVarDict = dict()
+    for edgeIndex in range(0, len(edgeList)) :
+        userEdgeFlowDecVarDict = dict()
+        for userIndex in range(0, numOfUsers) :
+            edgeFlow = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS)
+            userEdgeFlowDecVarDict[str(userIndex)] = edgeFlow
+        edgeFlowDecVarDict[str(edgeIndex)] = userEdgeFlowDecVarDict
+    edgeFlowDecVarList.append(edgeFlowDecVarDict)
+
 
 # update model
 model.update()

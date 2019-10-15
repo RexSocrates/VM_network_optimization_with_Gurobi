@@ -134,17 +134,20 @@ def getNetworkTopology() :
         networkDict['user'] = []
         networkDict['provider'] = []
         networkDict['router'] = []
+        networkDict['edges'] = [rowData[0][1:]]
         
         for row in rowData[1:] :
             node = row[0]
             edges = row[1:]
             
+            directlyConnectedEdges = [edgeIndex for edgeIndex in range(0, len(edges)) if edges[edgeIndex] == 1]
+            
             if node[0] == 'u' :
-                networkDict['user'].append(edges)
+                networkDict['user'].append(directlyConnectedEdges)
             elif node[0] == 'p' :
-                networkDict['provider'].append(edges)
+                networkDict['provider'].append(directlyConnectedEdges)
             else :
-                networkDict['router'].append(edges)
+                networkDict['router'].append(directlyConnectedEdges)
         
         return networkDict
 
