@@ -131,7 +131,26 @@ def getRouterAreaDict(routerData) :
             areaDict[str(routerArea)] = areaRouterList
     return areaDict
 
-
+# generate the VM demand data randomly
+def generateVmDemand(timeLength, numOfUsers, vmTypeList) :
+    vmDemandList = []
+    
+    for timeStage in range(0, timeLength) :
+        userVmDemandDict = dict()
+        for userIndex in range(0, numOfUsers) :
+            vmTypeDemandDict = dict()
+            for vmTypeIndex in range(0, len(vmTypeList)) :
+                vmType = vmTypeList[vmTypeIndex]
+                
+                vmDemand = random.randint(15, 30)
+                
+                vmTypeDemandDict[str(vmType)] = vmDemand
+            userVmDemandDict[str(userIndex)] = vmTypeDemandDict
+        vmDemandList.append(userVmDemandDict)
+    
+    return vmDemandList
+                    
+        
 
 
 
