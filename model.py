@@ -369,12 +369,18 @@ edgeFlowDecVarList = []
 for timeStage in range(0, timeLength) :
     edgeFlowDecVarDict = dict()
     for edgeIndex in range(0, len(edgeList)) :
-        userEdgeFlowDecVarDict = dict()
-        for userIndex in range(0, numOfUsers) :
-            edgeFlow = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS)
-            userEdgeFlowDecVarDict[str(userIndex)] = edgeFlow
-        edgeFlowDecVarDict[str(edgeIndex)] = userEdgeFlowDecVarDict
+        flowTypeDecVarDict = dict()
+        for flowTypeIndex in range(2) :
+            flowTypeList = ['in', 'out']
+            flowType = flowTypeList[flowTypeIndex]
+            userFlowDecVarDict = dict()
+            for userIndex in range(0, numOfUsers) :
+                flow = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS)
+                userFlowDecVarDict[str(userIndex)] = flow
+            flowTypeDecVarDict[str(flowType)] = userFlowDecVarDict
+        edgeFlowDecVarDict[str(edgeIndex)] = flowTypeDecVarDict
     edgeFlowDecVarList.append(edgeFlowDecVarDict)
+
 
 
 # update model
