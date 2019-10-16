@@ -18,6 +18,10 @@ model = Model('VM_network_and_energy_optimization_model')
 
 timeLength = 3 * 365 * 24
 numOfUsers = len(networkTopology['user'])
+vmContractLengthList = [1 * 24 * 365, 3 * 24 * 365]
+
+# VM demand at each time stage
+vmDemandList = generateVmDemand(timeLength, numOfUsers, vmTypeList)
 
 # Virtual Machines
 
@@ -44,7 +48,7 @@ for providerIndex in range(0, len(providerList)) :
         for vmTypeIndex in range(0, len(vmTypeList)) :
             vmType = vmTypeList[vmTypeIndex]
             contractEffectiveVmResDecVarDict = dict()
-            for contractLength in [1, 3] :
+            for contractLength in vmContractLengthList :
                 paymentEffectiveVmResDecVarDict = dict()
                 for payment in ['NoUpfront', 'PartialUpfront', 'AllUpfront'] :
                     effectiveVmResDecVarList = []
@@ -79,9 +83,8 @@ for timeStage in range(0, timeLength) :
                 # on-demand vm data (cost of using on-demand instance)
                 onDemandParameter = 0
                 
-                for contractIndex in range(2) :
-                    contractLengthList = [1, 3]
-                    contractLength = contractLengthList[contractIndex]
+                for contractIndex in range(0, len(vmContractLengthList)) :
+                    contractLength = vmContractLengthList[contractIndex]
                     paymentOptionDecVar_res = dict()
                     paymentOptionDecVar_uti = dict()
                     for paymentOptionIndex in range(3) :
@@ -293,7 +296,7 @@ for timeStage in range(0, timeLength) :
                     
                     vmDictOfProvider = sortedVmList[str(provider)]
                     contractDictOfVmType = vmDictOfProvider[str(vmType)]
-                    paymentDictOfContract = contractDictOfVmType[str(1)]
+                    paymentDictOfContract = contractDictOfVmType[str(vmContractLengthList[0])]
                     vmData = paymentDictOfContract['NoUpfront']
                     
                     vmEnergyConsumption = vmData.energyConsumption
@@ -470,7 +473,7 @@ for timeStage in range(0, timeLength) :
                 model.addConstr(energyConsumptionOfActiveVms, GRB.EQUAL, numOfActiveVms * energyConsumptionOfVmType)
                 
                 # constraint 6
-                vmUtilizationAndOnDemandDecVarList = [vmDecVar_uti[str(vmType)][str(contract)][payment] for contract in [1, 3] for payment in ['NoUpfront', 'PartialUpfront', 'AllUpfront']]
+                vmUtilizationAndOnDemandDecVarList = [vmDecVar_uti[str(vmType)][str(contract)][payment] for contract in vmContractLengthList for payment in ['NoUpfront', 'PartialUpfront', 'AllUpfront']]
                 vmUtilizationAndOnDemandDecVarList.append(vmDecVar_onDemand[str(vmType)])
                 
                 model.addConstr(numOfActiveVms, GRB.EQUAL, quicksum(vmUtilizationAndOnDemandDecVarList))
@@ -525,7 +528,7 @@ for timeStage in range(0, timeLength) :
                 
                 numOfActiveVms = numOfActiveVmsDecVarDict[str(vmType)]
                 
-                contractAndPaymentDecVarList = [vmDecVar_uti[str(vmType)][str(contract)][payment] for contract in [1, 3] for payment in ['NoUpfront', 'PartialUpfront', 'AllUpfront']]
+                contractAndPaymentDecVarList = [vmDecVar_uti[str(vmType)][str(contract)][payment] for contract in vmContractLengthList for payment in ['NoUpfront', 'PartialUpfront', 'AllUpfront']]
                 contractAndPaymentDecVarList.append(vmDecVar_onDemand[str(vmType)])
                 
                 model.addConstr(numOfActiveVms, GRB.EQUAL, quicksum(contractAndPaymentDecVarList))
@@ -558,7 +561,7 @@ for timeStage in range(0, timeLength) :
                 numOfTurnedOnVm = numOfTurnedOnVmTypeDict[str(vmType)]
                 numOfTurnedOffVm = numOfTurnedOffVmTypeDict[str(vmType)]
                 
-                vmUtilizationAndOnDemandDecVarList = [vmDecVar_uti[str(vmType)][str(contract)][str(payment)] for contract in [1, 3] for payment in ['NoUpfront', 'PartialUpfront', 'AllUpfront']]
+                vmUtilizationAndOnDemandDecVarList = [vmDecVar_uti[str(vmType)][str(contract)][str(payment)] for contract in vmContractLengthList for payment in ['NoUpfront', 'PartialUpfront', 'AllUpfront']]
                 vmUtilizationAndOnDemandDecVarList.append(vmDecVar_onDemand[str(vmType)])
                 
                 if timeStage == 0 :
@@ -673,7 +676,7 @@ for timeStage in range(0, timeLength) :
             for vmTypeIndex in range(0, len(vmTypeList)) :
                 vmType = vmTypeList[vmTypeIndex]
                 contractVmDecVar_uti = vmTypeDecVar_uti[str(vmType)]
-                for contractLength in [1, 3] :
+                for contractLength in vmContractLengthList :
                     paymentVmDecVar_uti = contractVmDecVar_uti[str(contractLength)]
                     for payment in ['NoUpfront', 'PartialUpfront', 'AllUpfront'] :
                         vmUtilizationDecVar = paymentVmDecVar_uti[str(payment)]
@@ -686,7 +689,44 @@ for timeStage in range(0, timeLength) :
                         
                         model.addConstr(vmUtilizationDecVar, GRB.LESS_EQUAL, quicksum(effectiveVmResDecVarList[timeStage]))
                         
+# constraint 15
+vmUtilizationDecVar = []
+vmOnDemandDecVar = []
+for timeStage in range(0, timeLength) :
+    userVmDemandDict = vmDemandList[timeStage]
+    for userIndex in range(0, numOfUsers) :
+        vmTypeDemandDict = userVmDemandDict[str(userIndex)]
+        for vmTypeIndex in range(0, len(vmTypeList)) :
+            vmType = vmTypeList[vmTypeIndex]
+            vmDemand = vmTypeDemandDict[str(vmType)]
+            
+            utlizationAndOnDemandVmDecVarList = []
+            
+            for providerIndex in range(0, len(providerList)) :
+                provider = providerList[providerIndex]
+                for contractLength in vmContractLengthList :
+                    for payment in ['NoUpfront', 'PartialUpfront', 'AllUpfront'] :
+                        providerVmDecVarDict_uti = vmUtilizationDecVar[timeStage]
+                        userVmDecVarDict_uti = providerVmDecVarDict_uti[str(provider)]
                         
+                        vmTypeDecVarDict_uti = userVmDecVarDict_uti[str(userIndex)]
+                        
+                        contractDecVarDict_uti = vmTypeDecVarDict_uti[str(vmType)]
+                        
+                        paymentDecVarDict_uti = contractDecVarDict_uti[str(contractLength)]
+                        
+                        utilizationDecVar = paymentDecVarDict_uti[payment]
+                        
+                        utlizationAndOnDemandVmDecVarList.append(utilizationDecVar)
+                
+                providerVmDecVarDict_onDemand = vmOnDemandDecVar[timeStage]
+                userVmDecVarDict_onDemand = providerVmDecVarDict_onDemand[str(provider)]
+                vmTypeDecVarDict_onDemand = userVmDecVarDict_onDemand[str(userIndex)]
+                onDemandDecVar = vmTypeDecVarDict_onDemand[str(vmType)]
+                utlizationAndOnDemandVmDecVarList.append(onDemandDecVar)
+            
+            model.addConstr(quicksum(utlizationAndOnDemandVmDecVarList), GRB.GREATER_EQUAL, vmDemand)
+            
 
 
 
