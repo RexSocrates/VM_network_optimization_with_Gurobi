@@ -136,7 +136,7 @@ for timeStage in range(0, timeLength) :
                         paymentEffectiveVmResDecVarDict = contractEffectiveVmResDecVarDict[str(contractLength)]
                         effectiveVmResDecVarList = paymentEffectiveVmResDecVarDict[str(paymentOption)]
                         
-                        for currentTimeStage in range(timeStage, timeStage + contractLength) :
+                        for currentTimeStage in range(timeStage, min(timeStage + contractLength, timeLength)) :
                             effectiveVmDecVarListAtCurrentTimeStage = effectiveVmResDecVarList[currentTimeStage]
                             effectiveVmDecVarListAtCurrentTimeStage.append(reservationVar)
                         
@@ -663,6 +663,7 @@ for timeStage in range(0, timeLength) :
 '''
 
 # constraint 14 : effective VM reservation
+
 
 
 
