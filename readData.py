@@ -108,7 +108,7 @@ def getProviderCapacity() :
             rowData.append(row)
         
         column = rowData[0]
-        cloudProviders = []
+        cloudProvidersDict = dict()
         for data in rowData[1:] :
             provider = row[0]
             coresLimit = row[1]
@@ -117,9 +117,9 @@ def getProviderCapacity() :
             internalBandwidthLimit = row[4]
             
             newProvider = CloudProvider(provider, coresLimit, memoryLimit, storageLimit, internalBandwidthLimit)
-            cloudProviders.append(newProvider)
+            cloudProviders[str(provider)] = newProvider
         
-        return cloudProviders
+        return cloudProvidersDict
 
 # read the network topology
 def getNetworkTopology() :

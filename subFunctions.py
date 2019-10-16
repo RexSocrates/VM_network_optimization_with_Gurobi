@@ -149,7 +149,17 @@ def generateVmDemand(timeLength, numOfUsers, vmTypeList) :
         vmDemandList.append(userVmDemandDict)
     
     return vmDemandList
-                    
+
+# get the dictionary containing instance resource requirement
+def getInstanceReqDict(instanceData) :
+    reqDict = dict()
+    
+    for vm in instanceData :
+        instanceType = vm.instanceType
+        
+        if instanceType not in reqDict :
+            reqDict[str(instanceType)] = vm
+    return reqDict
         
 
 
