@@ -348,18 +348,18 @@ for timeStage in range(0, timeLength) :
             routerOnDecVarDict[str(routerIndex)] = routerOn
             routerOffDecVarDict[str(routerIndex)] = routerOff
             routerBandwidthUsageDecVarDict[str(routerIndex)] = routerBandwidthUsage
-            
+        '''
         areaRouterEnergyDecVarDict[str(area)] = routerEnergyConsumptionDecVarDict
         areaRouterStatusDecVarDict[str(area)] = routerStatusDecVarDict
         areaRouterOnDecVarDict[str(area)] = routerOnDecVarDict
         areaRouterOffDecVarDict[str(area)] = routerOffDecVarDict
         areaRouterBandwidthUsageDecVarDict[str(area)] = routerBandwidthUsageDecVarDict
-        
-    routerEnergyConsumptionDecVarList.append(areaRouterEnergyDecVarDict)
-    routerStatusDecVarList.append(areaRouterStatusDecVarDict)
-    routerOnDecVarList.append(areaRouterOnDecVarDict)
-    routerOffDecVarList.append(areaRouterOffDecVarDict)
-    routerBandwidthUsageDecVarList.append(areaRouterBandwidthUsageDecVarDict)
+        '''
+    routerEnergyConsumptionDecVarList.append(routerEnergyConsumptionDecVarDict)
+    routerStatusDecVarList.append(routerStatusDecVarDict)
+    routerOnDecVarList.append(routerOnDecVarDict)
+    routerOffDecVarList.append(routerOffDecVarDict)
+    routerBandwidthUsageDecVarList.append(routerBandwidthUsageDecVarDict)
 
 # network flow decision variables
 edgeList = networkTopology['edges']
@@ -387,13 +387,13 @@ for timeStage in range(0, timeLength) :
 model.update()
 
 # equation 1 total cost function
-model.setObjective(quicksum([vmCostDecVarList[i] * vmCostParameterList[i] for i in range(0, len(vmCostDecVarList))]) + quicksum(bandwidthCostDecVarList[i] * bandwidthCostParameterList[i] for i in range(0, len(bandwidthCostDecVarList))) + quicksum([sortedEnergyPrice[timeStage][area] * quicksum([valueOfPUE * quicksum([activeVmEnergyConsumptionDecVarList[timeStage][str(provider)][str(userIndex)][str(vmTypeList[vmTypeIndex])] + changeStateEnergyConsumption[str(vmTypeList[vmTypeIndex])] * turnedOnVmVarList[timeStage][str(provider)][str(userIndex)][str(vmTypeList[vmTypeIndex])] + changeStateEnergyConsumption[str(vmTypeList[vmTypeIndex])] * turnedOffVmVarList[timeStage][str(provider)][str(userIndex)][str(vmTypeList[vmTypeIndex])] for userIndex in range(0, numOfUsers) for vmTypeIndex in range(0, len(vmTypeList))]) - greenEnergyUsageDecVarList[timeStage][str(provider)] for provider in providerAreaDict[area]]) for timeStage in range(0, timeLength) for area in providerAreaDict]) + quicksum([sortedEnergyPrice[timeStage][area] * quicksum([routerEnergyConsumptionDecVarList[timeStage][area][router.routerIndex] + routerChangeStateEnergyConsumption * routerOnDecVarList[timeStage][area][router.routerIndex] + routerChangeStateEnergyConsumption * routerOffDecVarList[timeStage][area][router.routerIndex] for router in routerAreaDict[area]]) for timeStage in range(0, timeLength) for area in routerAreaDict]), GRB.MINIMIZE)
+model.setObjective(quicksum([vmCostDecVarList[i] * vmCostParameterList[i] for i in range(0, len(vmCostDecVarList))]) + quicksum(bandwidthCostDecVarList[i] * bandwidthCostParameterList[i] for i in range(0, len(bandwidthCostDecVarList))) + quicksum([sortedEnergyPrice[timeStage][area] * quicksum([valueOfPUE * quicksum([activeVmEnergyConsumptionDecVarList[timeStage][str(provider)][str(userIndex)][str(vmTypeList[vmTypeIndex])] + changeStateEnergyConsumption[str(vmTypeList[vmTypeIndex])] * turnedOnVmVarList[timeStage][str(provider)][str(userIndex)][str(vmTypeList[vmTypeIndex])] + changeStateEnergyConsumption[str(vmTypeList[vmTypeIndex])] * turnedOffVmVarList[timeStage][str(provider)][str(userIndex)][str(vmTypeList[vmTypeIndex])] for userIndex in range(0, numOfUsers) for vmTypeIndex in range(0, len(vmTypeList))]) - greenEnergyUsageDecVarList[timeStage][str(provider)] for provider in providerAreaDict[area]]) for timeStage in range(0, timeLength) for area in providerAreaDict]) + quicksum([sortedEnergyPrice[timeStage][area] * quicksum([routerEnergyConsumptionDecVarList[timeStage][router.routerIndex] + routerChangeStateEnergyConsumption * routerOnDecVarList[timeStage][router.routerIndex] + routerChangeStateEnergyConsumption * routerOffDecVarList[timeStage][router.routerIndex] for router in routerAreaDict[area]]) for timeStage in range(0, timeLength) for area in routerAreaDict]), GRB.MINIMIZE)
 
 # VM energy objective function
 # quicksum([sortedEnergyPrice[timeStage][area] * quicksum([valueOfPUE * quicksum([activeVmDecVarList[timeStage][str(provider)][str(userIndex)][str(vmTypeList[vmTypeIndex])] + turnedOnVmVarList[timeStage][str(provider)][str(userIndex)][str(vmTypeList[vmTypeIndex])] + turnedOffVmVarList[timeStage][str(provider)][str(userIndex)][str(vmTypeList[vmTypeIndex])] for userIndex in range(0, numOfUsers) for vmTypeIndex in range(0, len(vmTypeList))]) - greenEnergyUsageDecVarList[timeStage][str(provider)] for provider in providerAreaDict[area]]) for timeStage in range(0, timeLength) for area in providerAreaDict])
 
 # network energy
-# quicksum([sortedEnergyPrice[timeStage][area] * quicksum([routerEnergyConsumptionDecVarList[timeStage][area][router.routerIndex] + routerChangeStateEnergyConsumption * routerOnDecVarList[timeStage][area][router.routerIndex] + routerChangeStateEnergyConsumption * routerOffDecVarList[timeStage][area][router.routerIndex] for router in routerAreaDict[area]]) for timeStage in range(0, timeLength) for area in routerAreaDict])
+# quicksum([sortedEnergyPrice[timeStage][area] * quicksum([routerEnergyConsumptionDecVarList[timeStage][router.routerIndex] + routerChangeStateEnergyConsumption * routerOnDecVarList[timeStage][router.routerIndex] + routerChangeStateEnergyConsumption * routerOffDecVarList[timeStage][router.routerIndex] for router in routerAreaDict[area]]) for timeStage in range(0, timeLength) for area in routerAreaDict])
 
 # add constraints
 
@@ -564,22 +564,24 @@ for timeStage in range(0, timeLength) :
 # constraint 10, 11 : Router_On and Router_Off constraints
 for timeStage in range(0, timeLength) :
     # constraint 10, 11, 12
-    areaRouterStatusDecVarDict = routerStatusDecVarList[timeStage]
+    routerStatusDecVarDict = routerStatusDecVarList[timeStage]
     # constraint 10, 11
-    areaRouterOnDecVarDict = routerOnDecVarList[timeStage]
-    areaRouterOffDecVarDict = routerOffDecVarList[timeStage]
+    routerOnDecVarDict = routerOnDecVarList[timeStage]
+    routerOffDecVarDict = routerOffDecVarList[timeStage]
     
     # constraint 12
-    areaRouterEnergyConsumptionDecVarDict = routerEnergyConsumptionDecVarList[timeStage]
-    areaRouterBandwidthUsageDecVarDict = routerBandwidthUsageDecVarList[timeStage]
+    routerEnergyConsumptionDecVarDict = routerEnergyConsumptionDecVarList[timeStage]
+    routerBandwidthUsageDecVarDict = routerBandwidthUsageDecVarList[timeStage]
     for area in routerAreaDict :
         areaRouterList = routerAreaDict[area]
+        '''
         routerStatusDecVarDict = areaRouterStatusDecVarDict[str(area)]
         routerOnDecVarDict = areaRouterOnDecVarDict[str(area)]
         routerOffDecVarDict = areaRouterOffDecVarDict[str(area)]
         
         routerEnergyConsumptionDecVarDict = areaRouterEnergyConsumptionDecVarDict[str(area)]
         routerBandwidthUsageDecVarDict = areaRouterBandwidthUsageDecVarDict[str(area)]
+        '''
         for router in areaRouterList :
             routerIndex = router.routerIndex
             
@@ -608,14 +610,11 @@ for timeStage in range(0, timeLength) :
 # constraint 12 : the energy consumption of a router
 '''
 for timeStage in range(0, timeLength) :
-    areaRouterEnergyConsumptionDecVarDict = routerEnergyConsumptionDecVarList[timeStage]
-    areaRouterStatusDecVarDict = routerStatusDecVarList[timeStage]
-    areaRouterBandwidthUsageDecVarDict = routerBandwidthUsageDecVarList[timeStage]
+    routerEnergyConsumptionDecVarDict = routerEnergyConsumptionDecVarList[timeStage]
+    routerStatusDecVarDict = routerStatusDecVarList[timeStage]
+    routerBandwidthUsageDecVarDict = routerBandwidthUsageDecVarList[timeStage]
     for area in routerAreaDict :
         areaRouterList = routerAreaDict[area]
-        routerEnergyConsumptionDecVarDict = areaRouterEnergyConsumptionDecVarDict[str(area)]
-        routerStatusDecVarDict = areaRouterStatusDecVarDict[str(area)]
-        routerBandwidthUsageDecVarDict = areaRouterBandwidthUsageDecVarDict[str(area)]
         for router in areaRouterList :
             routerIndex = router.routerIndex
             routerEnergyConsumption = routerEnergyConsumptionDecVarDict[str(routerIndex)]
@@ -625,7 +624,19 @@ for timeStage in range(0, timeLength) :
             model.addConstr(routerEnergyConsumption, GRB.EQUAL, routerStatus * idleRouterEnergyConsumption + routerBandwidthUsage / (2 * routerCapacity) * (fullyLoadedRouterEnergyConsumption - idleRouterEnergyConsumption))
 '''
     
-
+# constraint 13 : the bandwidth usage constraint
+for timeStage in range(0, timeLength) :
+    edgeFlowDecVarDict = edgeFlowDecVarList[timeStage]
+    for router in routerData :
+        routerIndex = router.routerIndex
+        routerDirectlyConnectedEdges = router.edges
+        for edgeIndex in routerDirectlyConnectedEdges :
+            flowTypeDecVarDict = edgeFlowDecVarDict[str(edgeIndex)]
+            for flowType in ['in', 'out'] :
+                userFlowDecVarDict = flowTypeDecVarDict[str(flowType)]
+                for userIndex in range(0, numOfUsers) :
+                    flow = userFlowDecVarDict[str(userIndex)]
+                
 
 
 
