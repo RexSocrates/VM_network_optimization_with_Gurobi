@@ -777,15 +777,38 @@ for timeStage in range(0, timeLength) :
             vmTypeUtilizedAndOnDemandDecVarList.append(currentVmTypeUtilizedAndOnDemandDecVarList)
         
         # constraint 16 : host constraint
-        model.addConstr(quicksum([vmCoreReqList[vmIndex] * quicksum(vmTypeUtilizedAndOnDemandDecVarList[vmIndex]) for vmIndex in range(0, len(vmCoreReqList))]))
+        model.addConstr(quicksum([vmCoreReqList[vmIndex] * quicksum(vmTypeUtilizedAndOnDemandDecVarList[vmIndex]) for vmIndex in range(0, len(vmCoreReqList))]), GRB.LESS_EQUAL, coreLimit)
         
         # constraint 17 : storage constraint
-        model.addConstr(quicksum([vmStorageReqList[vmIndex] * quicksum(vmTypeUtilizedAndOnDemandDecVarList[vmIndex]) for vmIndex in range(0, len(vmStorageReqList))]))
+        model.addConstr(quicksum([vmStorageReqList[vmIndex] * quicksum(vmTypeUtilizedAndOnDemandDecVarList[vmIndex]) for vmIndex in range(0, len(vmStorageReqList))]), GRB.LESS_EQUAL, storageLimit)
         
         # constraint 18 : internal bandwidth constraint
-        model.addConstr(quicksum([vmInternalBandReqList[vmIndex] * quicksum(vmTypeUtilizedAndOnDemandDecVarList[vmIndex]) for vmIndex in range(0, len(vmInternalBandReqList))]))
+        model.addConstr(quicksum([vmInternalBandReqList[vmIndex] * quicksum(vmTypeUtilizedAndOnDemandDecVarList[vmIndex]) for vmIndex in range(0, len(vmInternalBandReqList))]), GRB.LESS_EQUAL, internalBandLimit)
 
-
+# constraint 19 : VM decision variables integer constraint
+for timeStage in range(0, timeLength) :
+    for providerIndex in range(0, len(providerList)) :
+        provider = providerList[providerIndex]
+        for userIndex in range(0, numOfUsers) :
+            for vmTypeIndex in range(0, len(vmTypeList)) :
+                for contractLength in vmContractLengthList :
+                    for payment in ['NoUpfront', 'PartialUpfront', 'AllUpfront'] :
+                        providerVmDecVarDict_uti = vmUtilizationDecVar[timeStage]
+                        userVmDecVarDict_uti = providerVmDecVarDict_uti[str(provider)]
+                        vmTypeDecVarDict_uti = userVmDecVarDict_uti[str(userIndex)]
+                        contractDecVarDict_uti = vmTypeDecVarDict_uti[str(vmType)]
+                        paymentDecVarDict_uti = contractDecVarDict_uti[str(contractLength)]
+                        utilizationDecVar = paymentDecVarDict_uti[payment]
+                        
+                        model.addConstr(utilizationDecVar, GRB.GREATER_EQUAL, 0)
+                        
+                providerVmDecVarDict_onDemand = vmOnDemandDecVar[timeStage]
+                userVmDecVarDict_onDemand = providerVmDecVarDict_onDemand[str(provider)]
+                vmTypeDecVarDict_onDemand = userVmDecVarDict_onDemand[str(userIndex)]
+                onDemandDecVar = vmTypeDecVarDict_onDemand[str(vmType)]
+                
+                model.addConstr(onDemandDecVar, GRB.GREATER_EQUAL, 0)
+                        
 
 
 
