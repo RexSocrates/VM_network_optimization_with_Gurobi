@@ -663,7 +663,30 @@ for timeStage in range(0, timeLength) :
 '''
 
 # constraint 14 : effective VM reservation
-
+for timeStage in range(0, timeLength) :
+    providerVmDecVar_uti = vmUtilizationDecVar[timeStage]
+    for providerIndex in range(0, len(providerList)) :
+        provider = providerList[providerIndex]
+        userVmDecVar_uti = providerVmDecVar_uti[str(provider)]
+        for userIndex in range(0, numOfUsers) :
+            vmTypeDecVar_uti = userVmDecVar_uti[str(userIndex)]
+            for vmTypeIndex in range(0, len(vmTypeList)) :
+                vmType = vmTypeList[vmTypeIndex]
+                contractVmDecVar_uti = vmTypeDecVar_uti[str(vmType)]
+                for contractLength in [1, 3] :
+                    paymentVmDecVar_uti = contractVmDecVar_uti[str(contractLength)]
+                    for payment in ['NoUpfront', 'PartialUpfront', 'AllUpfront'] :
+                        vmUtilizationDecVar = paymentVmDecVar_uti[str(payment)]
+                        
+                        userEffectiveVmResDecVarDict = effectiveVmResDecVarDict[str(provider)]
+                        vmTypeEffectiveVmResDecVarDict = userEffectiveVmResDecVarDict[str(userIndex)]
+                        contractEffectiveVmResDecVarDict = vmTypeEffectiveVmResDecVarDict[str(vmType)]
+                        paymentEffectiveVmResDecVarDict = contractEffectiveVmResDecVarDict[str(contractLength)]
+                        effectiveVmResDecVarList = paymentEffectiveVmResDecVarDict[str(payment)]
+                        
+                        model.addConstr(vmUtilizationDecVar, GRB.LESS_EQUAL, quicksum(effectiveVmResDecVarList[timeStage]))
+                        
+                        
 
 
 
