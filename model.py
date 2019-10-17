@@ -927,7 +927,34 @@ for timeStage in range(0, timeLength) :
                     model.addConstr(bandDecVar_uti, GRB.GREATER_EQUAL, 0)
             model.addConstr(bandDecVar_onDemand, GRB.GREATER_EQUAL, 0)
 
-
+# constraint 24 : the relationship between the number of active VMs, turned on / off VMs
+for timeStage in range(0, timeLength) :
+    providerNumOfActiveVmsDecVarDict = numOfActiveVmsDecVarList[timeStage]
+    providerNumOfTurnedOnVmsDecVarDict = turnedOnVmVarList[timeStage]
+    providerNumOfTurnedOffVmsDecVarDict = turnedOffVmVarList[timeStage]
+    for providerIndex in range(0, len(providerList)) :
+        provider = providerList[providerIndex]
+        userNumOfActiveVmsDecVarDict = providerNumOfActiveVmsDecVarDict[str(provider)]
+        userNumOfTurnedOnVmsDecVarDict = providerNumOfTurnedOnVmsDecVarDict[str(provider)]
+        userNumOfTurnedOffVmsDecVarDict = providerNumOfTurnedOffVmsDecVarDict[str(provider)]
+        for userIndex in range(0, numOfUsers) :
+            numOfActiveVmsDecVarDict = userNumOfActiveVmsDecVarDict[str(userIndex)]
+            numOfTurnedOnVmsDecVarDict = userNumOfTurnedOnVmsDecVarDict[str(userIndex)]
+            numOfTurnedOffVmsDecVarDict = userNumOfTurnedOffVmsDecVarDict[str(userIndex)]
+            for vmTypeIndex in range(0, len(vmTypeList)) :
+                vmType = vmTypeList[vmTypeIndex]
+                numOfActiveVms = numOfActiveVmsDecVarDict[str(vmType)]
+                numOfTurnedOnVms = numOfTurnedOnVmsDecVarDict[str(vmType)]
+                numOfTurnedOffVms = numOfTurnedOffVmsDecVarDict[str(vmType)]
+                
+                if timeStage > 0 :
+                    previousTimeStageProviderNumOfActiveVmsDecVarDict = numOfActiveVmsDecVarList[timeStage - 1]
+                    previousTimeStageUserNumOfActiveVmsDecVarDict = previousTimeStageProviderNumOfActiveVmsDecVarDict[str(provider)]
+                    previousTimeStageNumOfActiveVmsDecVarDict = previousTimeStageUserNumOfActiveVmsDecVarDict[str(userIndex)]
+                    previousTimeStageNumOfActiveVms = previousTimeStageNumOfActiveVmsDecVarDict[str(vmType)]
+                    
+                    model.addConstr(numOfActiveVms, GRB.EQUAL, previousTimeStageNumOfActiveVms + numOfTurnedOnVms - numOfTurnedOffVms)
+                    
 
 
 
