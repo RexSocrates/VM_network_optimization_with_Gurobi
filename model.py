@@ -838,7 +838,30 @@ for timeStage in range(0, timeLength) :
                 
                 model.addConstr(onDemandDecVar, GRB.GREATER_EQUAL, 0)
                         
-
+# constraint 20 : effective bandiwdth
+for userIndex in range(0, numOfUsers) :
+    for routerIndex in range(0, numOfRouters) :
+        for bandContractLength in [5, 10] :
+            for bandPayment in ['No upfront', 'Partial upfront', 'All upfront'] :
+                for timeStage in range(0, timeLength) :
+                    # effective bandwidth
+                    routerEffectiveBandDecVarDict = effectiveBandDecVarDict[timeStage]
+                    contractEffectiveDecVarDict = routerEffectiveBandDecVarDict[str(routerIndex)]
+                    paymentEffectiveDecVarDict = contractEffectiveDecVarDict[str(bandContractLength)]
+                    effectiveBandDecVarList = paymentEffectiveDecVarDict[str(bandPayment)]
+                    
+                    effectiveBandDecVarAtCurrentTimeStage = effectiveBandDecVarList[timeStage]
+                    
+                    # bandwidth utilization
+                    userBandUtilization = bandUtilizationDecVar[timeStage]
+                    routerBandUtilization = userBandUtilization[str(userIndex)]
+                    contractBandUtilization = routerBandUtilization[str(routerIndex)]
+                    paymentBandUtilization = contractBandUtilization[str(bandContractLength)]
+                    bandUtilization = paymentBandUtilization[str(bandPayment)]
+                    
+                    model.addConstr(bandUtilization, GRB.LESS_EQUAL, quicksum(effectiveBandDecVarAtCurrentTimeStage))
+                    
+                    
 
 
 
