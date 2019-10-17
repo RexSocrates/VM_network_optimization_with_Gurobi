@@ -180,6 +180,25 @@ bandResDecVar = []
 bandUtilizationDecVar = []
 bandOnDemandDecVar = []
 
+# a list containing the effective bandwidth
+effectiveBandDecVarDict = dict()
+
+# initialize the bandwidth dictionary
+for userIndex in range(0, numOfUsers) :
+    routerEffectiveBandDecVarDict = dict()
+    for routerIndex in range(0, numOfRouters) :
+        contractEffectiveBandDecVarDict = dict()
+        for bandResContractLength in [5, 10] :
+            paymentEffectiveBandDecVarDict = dict()
+            for bandResPayment in ['No upfront', 'Partial upfront', 'All upfront'] :
+                effectiveBandDecVarList = []
+                for timeStage in range(0, timeLength) :
+                    effectiveBandDecVarList.append([])
+                paymentEffectiveBandDecVarDict[str(bandResPayment)] = effectiveBandDecVarList
+            contractEffectiveBandDecVarDict[str(bandResContractLength)] = paymentEffectiveBandDecVarDict
+        routerEffectiveBandDecVarDict[str(routerIndex)] = contractEffectiveBandDecVarDict
+    effectiveBandDecVarDict[str(userIndex)] = routerEffectiveBandDecVarDict
+
 # equation 3 the cost of network bandwidth
 for timeStage in range(0, timeLength) :
     bandUserDecVar_res = []
@@ -231,6 +250,16 @@ for timeStage in range(0, timeLength) :
                     
                     bandwidthCostParameterList.append(routerInitialResFee)
                     bandwidthCostParameterList.append(routerUtilizationFee)
+                    
+                    # add the decision variables to the effective bandiwdth list
+                    routerEffectiveBandDecVarDict = routerEffectiveBandDecVarDict[str(userIndex)]
+                    contractEffectiveBandDecVarDict = routerEffectiveBandDecVarDict[str(routerIndex)]
+                    paymentEffectiveBandDecVarDict = contractEffectiveBandDecVarDict[str(bandResContractLength)]
+                    effectiveBandDecVarList = paymentEffectiveBandDecVarDict[str(bandPaymentOption)]
+                    
+                    for currentTimeStage in range(timeStage, min(timeLength, timeStage + bandResContractLength)) :
+                        effectiveBandDecVarAtCurrentTimeStage = effectiveBandDecVarList[currentTimeStage]
+                        effectiveBandDecVarAtCurrentTimeStage.append(bandReservation)
                     
                 bandContractDecVar_res[str(bandResContractLength)] = bandPaymentOptionDecVar_res
                 bandContractDecVar_uti[str(bandResContractLength)] = bandPaymentOptionDecVar_uti
