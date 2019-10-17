@@ -892,8 +892,14 @@ for timeStage in range(0, timeLength) :
             bandUtilizationAndOnDemandDecVarList.append(bandOnDemand)
             
         model.addConstr(quicksum(bandUtilizationAndOnDemandDecVarList), GRB.LESS_EQUAL, routerStatus * 1.0)
-                    
 
+# constraint 22 : router status initialization
+for router in routerData :
+    routerIndex = router.routerIndex
+    routerStatusDecVarDict = routerStatusDecVarList[0]
+    routerStatus = routerStatusDecVarDict[str(routerIndex)]
+    
+    model.addConstr(routerStatus, GRB.EQUAL, 0)
 
 
 
