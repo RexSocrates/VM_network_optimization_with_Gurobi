@@ -901,7 +901,31 @@ for router in routerData :
     
     model.addConstr(routerStatus, GRB.EQUAL, 0)
 
-
+# constraint 23 : the non-negative constraint for bandwidth decision variables
+for timeStage in range(0, timeLength) :
+    userBandDecVarDict_res = bandResDecVar[timeStage]
+    userBandDecVarDict_uti = bandUtilizationDecVar[timeStage]
+    userBandDecVarDict_onDemand = bandOnDemandDecVar[timeStage]
+    for userIndex in range(0, numOfUsers) :
+        routerBandDecVarDict_res = userBandDecVarDict_res[str(userIndex)]
+        routerBandDecVarDict_uti = userBandDecVarDict_uti[str(userIndex)]
+        routerBandDecVarDict_onDemand = userBandDecVarDict_onDemand[str(userIndex)]
+        for router in routerData :
+            routerIndex = router.routerIndex
+            
+            contractBandDecVarDict_res = routerBandDecVarDict_res[str(routerIndex)]
+            contractBandDecVarDict_uti = routerBandDecVarDict_uti[str(routerIndex)]
+            bandDecVar_onDemand = routerBandDecVarDict_onDemand[str(routerIndex)]
+            for bandContractLength in [5, 10] :
+                paymentBandDecVarDict_res = contractBandDecVarDict_res[str(bandContractLength)]
+                paymentBandDecVarDict_uti = contractBandDecVarDict_uti[str(bandContractLength)]
+                for bandPayment in ['No upfront', 'Partial upfront', 'All upfront'] :
+                    bandDecVar_res = contractBandDecVarDict_res[str(bandPayment)]
+                    bandDecVar_uti = contractBandDecVarDict_uti[str(bandPayment)]
+                    
+                    model.addConstr(bandDecVar_res, GRB.GREATER_EQUAL, 0)
+                    model.addConstr(bandDecVar_uti, GRB.GREATER_EQUAL, 0)
+            model.addConstr(bandDecVar_onDemand, GRB.GREATER_EQUAL, 0)
 
 
 
