@@ -840,7 +840,8 @@ for timeStage in range(0, timeLength) :
                         
 # constraint 20 : effective bandiwdth
 for userIndex in range(0, numOfUsers) :
-    for routerIndex in range(0, numOfRouters) :
+    for router in routerData :
+        routerIndex = router.routerIndex
         for bandContractLength in [5, 10] :
             for bandPayment in ['No upfront', 'Partial upfront', 'All upfront'] :
                 for timeStage in range(0, timeLength) :
@@ -861,6 +862,36 @@ for userIndex in range(0, numOfUsers) :
                     
                     model.addConstr(bandUtilization, GRB.LESS_EQUAL, quicksum(effectiveBandDecVarAtCurrentTimeStage))
                     
+# constraint 21 : router's bandwidth limit
+for timeStage in range(0, timeLength) :
+    for router in routerData :
+        routerIndex = router.routerIndex
+        bandUtilizationAndOnDemandDecVarList = []
+        
+        routerStatusDecVarDict = routerStatusDecVarList[timeStage]
+        routerStatus = routerStatusDecVarDict[str(routerIndex)]
+        
+        for userIndex in range(0, numOfUsers) :
+            for bandContractLength in [5, 10] :
+                for bandPayment in ['No upfront', 'Partial upfront', 'All upfront'] :
+                    userBandUtilization = bandUtilizationDecVar[timeStage]
+                    
+                    routerBandUtilization = userBandUtilization[str(userIndex)]
+                    
+                    contractBandUtilization = routerBandUtilization[str(routerIndex)]
+                    
+                    paymentBandUtilization = contractBandUtilization[str(bandContractLength)]
+                    
+                    bandUtilization = paymentBandUtilization[str(bandPayment)]
+                    
+                    bandUtilizationAndOnDemandDecVarList.append(bandUtilization)
+                    
+            userBandOnDemand = bandOnDemandDecVar[timeStage]
+            routerBandOnDemand = userBandOnDemand[str(userIndex)]
+            bandOnDemand = routerBandOnDemand[str(routerIndex)]
+            bandUtilizationAndOnDemandDecVarList.append(bandOnDemand)
+            
+        model.addConstr(quicksum(bandUtilizationAndOnDemandDecVarList), GRB.LESS_EQUAL, routerStatus * 1.0)
                     
 
 
