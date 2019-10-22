@@ -955,7 +955,43 @@ for timeStage in range(0, timeLength) :
                     
                     model.addConstr(numOfActiveVms, GRB.EQUAL, previousTimeStageNumOfActiveVms + numOfTurnedOnVms - numOfTurnedOffVms)
                     
-
+# constraint 25
+for timeStage in range(0, timeLength) :
+    providerGreenEnergyDecVarDict = greenEnergyUsageDecVarList[timeStage]
+    for providerIndex in range(0, len(providerList)) :
+        provider = providerList[providerIndex]
+        greenEnergyUsage = providerGreenEnergyDecVarDict[str(provider)]
+        
+        energyConsumptionDecVarList = []
+        energyConsumptionParameterList = []
+        
+        for userIndex in range(0, numOfUsers) :
+            for vmTypeIndex in range(0, len(vmTypeList)) :
+                vmType = vmTypeList[vmTypeIndex]
+                
+                providerActiveVmEnergyConsumptionDecVarDict = activeVmEnergyConsumptionDecVarList[timeStage]
+                providerTurnedOnVmDecVarDict = turnedOnVmVarList[timeStage]
+                providerTurnedOffVmDecVarDict = turnedOffVmVarList[timeStage]
+                
+                userActiveVmEnergyConsumptionDecVarDict = providerActiveVmEnergyConsumptionDecVarDict[str(provider)]
+                userTurnedOnVmDecVarDict = providerTurnedOnVmDecVarDict[str(provider)]
+                userTurnedOffVmDecVarDict = providerTurnedOffVmDecVarDict[str(provider)]
+                
+                vmTypeActiveVmEnergyConsumptionDecVarDict = userActiveVmEnergyConsumptionDecVarDict[str(userIndex)]
+                vmTypeTurnedOnVmDecVarDict = userTurnedOnVmDecVarDict[str(userIndex)]
+                vmTypeTurnedOffVmDecVarDict = userTurnedOffVmDecVarDict[str(userIndex)]
+                
+                activeVmEnergyConsumptionDecVar = vmTypeActiveVmEnergyConsumptionDecVarDict[str(vmType)]
+                turnedOnVmDecVar = vmTypeTurnedOnVmDecVarDict[str(vmType)]
+                turnedOffVmDecVar = vmTypeTurnedOffVmDecVarDict[str(vmType)]
+                
+                changeStateEnergyConsumption = vmChangeStateEnergyDict[str(vmType)]
+                
+                energyConsumptionDecVarList.extend([activeVmEnergyConsumptionDecVar, turnedOnVmDecVar, turnedOffVmDecVar])
+                energyConsumptionParameterList.extend([1, changeStateEnergyConsumption, changeStateEnergyConsumption])
+        
+        model.addConstr(greenEnergyUsage, GRB.LESS_EQUAL, valueOfPUE * quicksum([energyConsumptionDecVarList[index] * energyConsumptionParameterList[index] for index in range(0, len(energyConsumptionDecVarList))]))
+                
 
 
 
