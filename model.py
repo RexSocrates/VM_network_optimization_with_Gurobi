@@ -289,6 +289,7 @@ for timeStage in range(0, timeLength) :
 
 # Power Usage Effectiveness
 valueOfPUE = 1.58
+chargingDischargingEffeciency = 0.88
 energyPriceDict = readEnergyPricingFile()
 sortedEnergyPrice = sortEnergyPrice(energyPriceDict, timeLength)
 
@@ -299,6 +300,9 @@ turnedOnVmVarList = []
 turnedOffVmVarList = []
 greenEnergyUsageDecVarList = []
 vmChangeStateEnergyDict = dict()
+solarEnergyToDcDecVarList = []
+solarEnergyToBatteryDecVarList = []
+batteryEnergyToDcDecVarList = []
 
 # equation 4 the cost of energy consumption of active VMs
 for timeStage in range(0, timeLength) :
@@ -307,6 +311,9 @@ for timeStage in range(0, timeLength) :
     providerTurnedOnVmDecVarDict = dict()
     providerTurnedOffVmDecVarDict = dict()
     providerGreenEnergyDecVarDict = dict()
+    providerSolarToDcDecVarDict = dict()
+    providerSolarToBatteryDecVarDict = dict()
+    providerBatteryToDcDecVarDict = dict()
     for area in providerAreaDict :
         providerListOfArea = providerAreaDict[area]
         for provider in providerListOfArea :
@@ -352,18 +359,27 @@ for timeStage in range(0, timeLength) :
                 userTurnedOffVmDecVarDict[str(userIndex)] = turnedOffVmDecVarDict
             
             providerGreenEnergyUsage = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS)
+            solarToDc = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS)
+            solarToBattery = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS)
+            batteryToDc = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS)
             
             providerActiveVmEnergyConsumptionDecVarDict[str(provider)] = userActiveVmEnergyConsumptionDecVarDict
             providerNumOfActiveVmsDecVarDict[str(provider)] = userNumOfActiveVmsDecVarDict
             providerTurnedOnVmDecVarDict[str(provider)] = userTurnedOnVmDecVarDict
             providerTurnedOffVmDecVarDict[str(provider)] = userTurnedOffVmDecVarDict
             providerGreenEnergyDecVarDict[str(provider)] = providerGreenEnergyUsage
+            providerSolarToDcDecVarDict[str(provider)] = solarToDc
+            providerSolarToBatteryDecVarDict[str(provider)] = solarToBattery
+            providerBatteryToDcDecVarDict[str(provider)] = batteryToDc
     
     activeVmEnergyConsumptionDecVarList.append(providerActiveVmEnergyConsumptionDecVarDict)
     numOfActiveVmsDecVarList.append(providerNumOfActiveVmsDecVarDict)
     turnedOnVmVarList.append(providerTurnedOnVmDecVarDict)
     turnedOffVmVarList.append(providerTurnedOffVmDecVarDict)
     greenEnergyUsageDecVarList.append(providerGreenEnergyDecVarDict)
+    solarEnergyToDcDecVarList.append(providerSolarToDcDecVarDict)
+    solarEnergyToBatteryDecVarList.append(providerSolarToBatteryDecVarDict)
+    batteryEnergyToDcDecVarList.append(providerBatteryToDcDecVarDict)
                     
                     
 
@@ -955,12 +971,20 @@ for timeStage in range(0, timeLength) :
                     
                     model.addConstr(numOfActiveVms, GRB.EQUAL, previousTimeStageNumOfActiveVms + numOfTurnedOnVms - numOfTurnedOffVms)
                     
-# constraint 25
+# constraint 25, 26
 for timeStage in range(0, timeLength) :
+    # constraint 25, 26
     providerGreenEnergyDecVarDict = greenEnergyUsageDecVarList[timeStage]
+    
+    # constraint 26
+    providerSolarEnergyToDcDecVarDict = solarEnergyToDcDecVarList[timeStage]
+    providerBatteryEnergyToDcDecVarDict = batteryEnergyToDcDecVarList[timeStage]
+    
     for providerIndex in range(0, len(providerList)) :
         provider = providerList[providerIndex]
         greenEnergyUsage = providerGreenEnergyDecVarDict[str(provider)]
+        solarEnergyToDc = providerSolarEnergyToDcDecVarDict[str(provider)]
+        batteryEnergyToDc = providerBatteryEnergyToDcDecVarDict[str(provider)]
         
         energyConsumptionDecVarList = []
         energyConsumptionParameterList = []
@@ -990,9 +1014,27 @@ for timeStage in range(0, timeLength) :
                 energyConsumptionDecVarList.extend([activeVmEnergyConsumptionDecVar, turnedOnVmDecVar, turnedOffVmDecVar])
                 energyConsumptionParameterList.extend([1, changeStateEnergyConsumption, changeStateEnergyConsumption])
         
+        # constraint 25
         model.addConstr(greenEnergyUsage, GRB.LESS_EQUAL, valueOfPUE * quicksum([energyConsumptionDecVarList[index] * energyConsumptionParameterList[index] for index in range(0, len(energyConsumptionDecVarList))]))
-                
-
+        # constraint 26
+        model.addConstr(greenEnergyUsage, GRB.EQUAL, solarEnergyToDc + chargingDischargingEffeciency * batteryEnergyToDc)
+        
+# constraint 26
+'''
+for timeStage in range(0, timeLength) :
+    providerGreenEnergyDecVarDict = greenEnergyUsageDecVarList[timeStage]
+    providerSolarEnergyToDcDecVarDict = solarEnergyToDcDecVarList[timeStage]
+    providerBatteryEnergyToDcDecVarDict = batteryEnergyToDcDecVarList[timeStage]
+    
+    for providerIndex in range(0, len(providerList)) :
+        provider = providerList[providerIndex]
+        greenEnergyUsage = providerGreenEnergyDecVarDict[str(provider)]
+        solarEnergyToDc = providerSolarEnergyToDcDecVarDict[str(provider)]
+        batteryEnergyToDc = providerBatteryEnergyToDcDecVarDict[str(provider)]
+        
+        model.addConstr(greenEnergyUsage, GRB.EQUAL, solarEnergyToDc + chargingDischargingEffeciency * batteryEnergyToDc)
+'''
+        
 
 
 
