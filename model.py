@@ -1302,8 +1302,18 @@ for timeStage in range(0, timeLength) :
                 flowOutDecVarListOfProviders.append(flowDecVar)
         
         model.addConstr(quicksum(userFlowInEdgeDecVarList), GRB.GREATER_EQUAL, quicksum(flowOutDecVarListOfProviders))
-        
-        
+
+# constraint 43 : the decision variables of flow should greater than 0
+for timeStage in range(0, timeLength) :
+    edgeFlowDecVarDict = edgeFlowDecVarList[timeStage]
+    for edgeIndex in range(0, len(edgeList)) :
+        flowTypeDecVarDict = edgeFlowDecVarDict[str(edgeIndex)]
+        for flowType in ['in', 'out'] :
+            userFlowDecVarDict = flowTypeDecVarDict[str(flowType)]
+            for userIndex in range(0, numOfUsers) :
+                flow = [str(userIndex)]
+                
+                model.addConstr(flow, GRB.GREATER_EQUAL, 0)
         
 
 
