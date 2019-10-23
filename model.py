@@ -1106,7 +1106,17 @@ for timeStage in range(0, timeLength) :
         
         model.addConstr(batteryEnergyToDc, GRB.EQUAL, batteryEnergyLevel_beg - batteryEnergyLevel_end)
         
-
+# constraint 31 : the energy that the battery can supply do not exceed the energy level of this battery at the beginning
+for timeStage in range(0, timeLength) :
+    providerBatteryEnergyToDcDecVarDict = batteryEnergyToDcDecVarList[timeStage]
+    providerBatteryEnergyLevelDecVarDict_beg = batteryEnergyLevelDecVarList_beg[timeStage]
+    for providerIndex in range(0, len(providerList)) :
+        provider = providerList[providerIndex]
+        
+        batteryEnergyToDc = providerBatteryEnergyToDcDecVarDict[str(provider)]
+        batteryEnergyLevel_beg = providerBatteryEnergyLevelDecVarDict_beg[str(provider)]
+        
+        model.addConstr(batteryEnergyToDc, GRB.LESS_EQUAL, batteryEnergyLevel_beg)
 
 
 
