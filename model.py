@@ -1132,6 +1132,25 @@ for timeStage in range(0, timeLength) :
         model.addConstr(batteryEnergyLevel_beg, GRB.LESS_EQUAL, batteryEnergyCapacity)
         model.addConstr(batteryEnergyLevel_end, GRB.LESS_EQUAL, batteryEnergyCapacity)
     
-
+# constraint 34, 35 : the limit of battery charging and discharging
+# assume that the c rate of the battery is 73 Ah permodule and there are 5 modules in a battery
+chargingDischargingLimit = 73 * 5
+for timeStage in range(0, timeLength) :
+    providerSolarEnergyToBatteryDecVarDict = solarEnergyToBatteryDecVarList[timeStage]
+    providerBatteryEnergyToDcDecVarDict = batteryEnergyToDcDecVarList[timeStage]
+    for providerIndex in range(0, len(providerList)) :
+        provider = providerList[providerIndex]
+        
+        solarEnergyToBattery = providerSolarEnergyToBatteryDecVarDict[str(provider)]
+        batteryEnergyToDc = providerBatteryEnergyToDcDecVarDict[str(provider)]
+        
+        # constraint 34
+        model.addConstr(solarEnergyToBattery, GRB.LESS_EQUAL, chargingDischargingLimit)
+        # constraint 35
+        model.addConstr(batteryEnergyToDc, GRB.LESS_EQUAL, chargingDischargingLimit)
+        
+        
+        
+        
 
 
