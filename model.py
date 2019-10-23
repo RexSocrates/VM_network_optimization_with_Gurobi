@@ -1053,6 +1053,7 @@ for timeStage in range(0, timeLength) :
 
 # constraint 28 : the usage of green energy do not exceed the amount of produced renewable energy
 for providerIndex in range(0, len(providerList)) :
+    provider = providerList[providerIndex]
     greenEnergyUsageList = []
     greenEnergyLimitList = []
     for timeStage in range(0, timeLength) :
