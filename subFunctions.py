@@ -161,6 +161,16 @@ def getInstanceReqDict(instanceData) :
             reqDict[str(instanceType)] = vm
     return reqDict
         
-
+# get the outbound bandwidth requirement of each VM type
+def getOutboundBandwidthRequirement(instanceData) :
+    outboundBandReqDict = dict()
+    
+    for instance in instanceData :
+        instanceType = instance.instanceType
+        networkReq = instance.networkReq
+        
+        if instanceType not in outboundBandReqDict :
+            outboundBandReqDict[str(instanceType)] = networkReq
+    return outboundBandReqDict
 
 

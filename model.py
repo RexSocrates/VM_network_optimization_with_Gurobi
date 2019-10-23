@@ -781,7 +781,7 @@ for timeStage in range(0, timeLength) :
             model.addConstr(quicksum(utlizationAndOnDemandVmDecVarList), GRB.GREATER_EQUAL, vmDemand)
             
 # constraint 16, 17, 18 : cloud provider resource upper bound limit
-cloudProvidersDict = getProviderCapacity()
+cloudProvidersDict = getProviderCapacity(networkTopology['provider'])
 instanceReqDict = getInstanceReqDict(instanceData)
 for timeStage in range(0, timeLength) :
     for providerIndex in range(0, len(providerList)) :
@@ -1224,7 +1224,53 @@ for timeStage in range(0, timeLength) :
             
             model.addConstr(quicksum(outFlowDecVarList), GRB.LESS_EQUAL, quicksum(utilizationAndOnDemandBandDecVarList))
 
-# constraint 41 : 
+# constraint 41 : the bandwidth requirement of VMs in a provider should be satisfied
+outboundBandReqDict = getOutboundBandwidthRequirement(instanceData)
+for timeStage in range(0, timeLength) :
+    providerVmDecVarDict_uti = vmUtilizationDecVar[timeStage]
+    providerVmDecVarDict_onDemand = vmOnDemandDecVar[timeStage]
+    for providerIndex in range(0, len(providerList)) :
+        provider = providerList[providerIndex]
+        cloudProviderObj = cloudProvidersDict[str(provider)]
+        providerDirectlyConnectedEdges = cloudProviderObj.directlyConnectedEdges
+        
+        userVmDecVarDict_uti = providerVmDecVarDict_uti[str(provider)]
+        userVmDecVarDict_onDemand = providerVmDecVarDict_onDemand[str(provider)]
+        for userIndex in range(0, numOfUsers) :
+            vmTypeVmDecVarDict_uti = userVmDecVarDict_uti[str(userIndex)]
+            vmTypeVmDecVarDict_onDemand = userVmDecVarDict_onDemand[str(userIndex)]
+            
+            vmTypeUtilizationAndOnDemandDict = dict()
+            
+            
+            for vmTypeIndex in range(0, len(vmTypeList)) :
+                vmType = vmTypeList[vmTypeIndex]
+                contractVmDecVarDict_uti = vmTypeVmDecVarDict_uti[str(vmType)]
+                onDemandVm = vmTypeVmDecVarDict_onDemand[str(vmType)]
+                
+                utilizationAndOnDemandDecVarList = []
+                
+                for contractIndex in range(0, len(vmContractLengthList)) :
+                    contractLength = vmContractLengthList[contractIndex]
+                    paymentVmDecVarDict = contractVmDecVarDict_uti[str(contractLength)]
+                    for payment in ['NoUpfront', 'PartialUpfront', 'AllUpfront'] :
+                        utilizationVm = paymentVmDecVarDict[str(payment)]
+                        utilizationAndOnDemandDecVarList.append(utilizationVm)
+                utilizationAndOnDemandDecVarList.append(onDemandVm)
+                
+                vmTypeUtilizationAndOnDemandDict[str(vmType)] = utilizationAndOnDemandDecVarList
+            
+            userEdgeFlowDecVarList = []
+            for edgeIndex in providerDirectlyConnectedEdges :
+                edgeFlowDecVarDict = edgeFlowDecVarList[timeStage]
+                flowTypeDecVarDict = edgeFlowDecVarDict[str(edgeIndex)]
+                userFlowDecVarDict = flowTypeDecVarDict['out']
+                flowDecVar = userFlowDecVarDict[str(userIndex)]
+                
+                userEdgeFlowDecVarList.append(flowDecVar)
+            
+            model.addConstr(quicksum(userEdgeFlowDecVarList), GRB.GREATER_EQUAL, quicksum([vmTypeUtilizationAndOnDemandDict[str(vmType)] * outboundBandReqDict[str(vmType)] for vmType in vmTypeList]))
+            
         
                 
         

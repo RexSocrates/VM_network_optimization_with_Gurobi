@@ -99,7 +99,7 @@ def readEnergyPricingFile() :
 
 
 # read the file of cloud provider capacity
-def getProviderCapacity() :
+def getProviderCapacity(providerNetworkEdges) :
     with open('goldenSample_provider_capacity.csv', 'r', newline='', encoding='utf-8') as csvfile :
         rows = csv.reader(csvfile)
 
@@ -116,8 +116,10 @@ def getProviderCapacity() :
             storageLimit = row[3]
             internalBandwidthLimit = row[4]
             
-            newProvider = CloudProvider(provider, coresLimit, memoryLimit, storageLimit, internalBandwidthLimit)
-            cloudProviders[str(provider)] = newProvider
+            directlyConnectedEdges = providerNetworkEdges[str(provider)]
+            
+            newProvider = CloudProvider(provider, coresLimit, memoryLimit, storageLimit, internalBandwidthLimit, directlyConnectedEdges)
+            cloudProvidersDict[str(provider)] = newProvider
         
         return cloudProvidersDict
 
@@ -132,7 +134,7 @@ def getNetworkTopology() :
         
         networkDict = dict()
         networkDict['user'] = []
-        networkDict['provider'] = []
+        networkDict['provider'] = dict()
         networkDict['router'] = []
         networkDict['edges'] = [rowData[0][1:]]
         
@@ -145,7 +147,9 @@ def getNetworkTopology() :
             if node[0] == 'u' :
                 networkDict['user'].append(directlyConnectedEdges)
             elif node[0] == 'p' :
-                networkDict['provider'].append(directlyConnectedEdges)
+                nodeSplitList = node.split('-')
+                providerName = nodeSplitList[1]
+                networkDict['provider'][str(providerName)] = directlyConnectedEdges
             else :
                 networkDict['router'].append(directlyConnectedEdges)
         
