@@ -1148,6 +1148,22 @@ for timeStage in range(0, timeLength) :
         model.addConstr(solarEnergyToBattery, GRB.LESS_EQUAL, chargingDischargingLimit)
         # constraint 35
         model.addConstr(batteryEnergyToDc, GRB.LESS_EQUAL, chargingDischargingLimit)
+
+# constraint 36, 37, 38 : initialize the battery energy level and theenergy that can supplied by the battery
+for providerIndex in range(0, len(providerList)) :
+    provider = providerList[providerIndex]
+    
+    batteryEnergyToDc = batteryEnergyToDcDecVarList[0][str(provider)]
+    batteryEnergyLevel_beg = batteryEnergyLevelDecVarList_beg[0][str(provider)]
+    batteryEnergyLevel_end = batteryEnergyLevelDecVarList_end[0][str(provider)]
+    
+    # constraint 36
+    model.addConstr(batteryEnergyToDc, GRB.EQUAL, 0)
+    # constraint 37
+    model.addConstr(batteryEnergyLevel_beg, GRB.EQUAL, 0)
+    # constraint 38
+    model.addConstr(batteryEnergyLevel_end, GRB.EQUAL, 0)
+    
         
         
         
