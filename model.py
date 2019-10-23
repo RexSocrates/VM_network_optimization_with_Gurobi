@@ -1271,8 +1271,37 @@ for timeStage in range(0, timeLength) :
             
             model.addConstr(quicksum(userEdgeFlowDecVarList), GRB.GREATER_EQUAL, quicksum([vmTypeUtilizationAndOnDemandDict[str(vmType)] * outboundBandReqDict[str(vmType)] for vmType in vmTypeList]))
             
+# constraint 42 : the bandwidth required by the flow entering a user should be satistied
+userEdgeList = networkTopology['user']
+for timeStage in range(0, timeLength) :
+    for userIndex in range(0, numOfUsers) :
+        userDirectlyConnectedEdges = userEdgeList[userIndex]
         
+        userFlowInEdgeDecVarList = []
+        
+        for edgeIndex in userDirectlyConnectedEdges :
+            edgeFlowDecVarDict = edgeFlowDecVarList[timeStage]
+            flowTypeDecVarDict = edgeFlowDecVarDict[str(edgeIndex)]
+            userFlowDecVarDict = flowTypeDecVarDict['in']
+            flowDecVar = userFlowDecVarDict[str(userIndex)]
+            userFlowInEdgeDecVarList.append(flowDecVar)
+        
+        flowOutDecVarListOfProviders = []
+        
+        for providerIndex in range(0, len(providerList)) :
+            provider = providerList[providerIndex]
+            cloudProviderObj = cloudProvidersDict[str(provider)]
+            providerDirectlyConnectedEdges = cloudProviderObj.directlyConnectedEdges
+            
+            for edgeIndex in providerDirectlyConnectedEdges :
+                edgeFlowDecVarDict = edgeFlowDecVarList[timeStage]
+                flowTypeDecVarDict = edgeFlowDecVarDict[str(edgeIndex)]
+                userFlowDecVarDict = flowTypeDecVarDict['out']
+                flowDecVar = userFlowDecVarDict[str(userIndex)]
                 
+                flowOutDecVarListOfProviders.append(flowDecVar)
+        
+        model.addConstr(quicksum(userFlowInEdgeDecVarList), GRB.GREATER_EQUAL, quicksum(flowOutDecVarListOfProviders))
         
         
         
