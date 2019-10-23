@@ -1091,7 +1091,20 @@ for timeStage in range(1, timeLength) :
         previousTimeSolarEnergyToBattery = providerPreviousTimeSolarEnergyToBatteryDecVarDict[str(provider)]
         
         model.addConstr(batteryEnergyLevel_beg, GRB.EQUAL, previousTimeBatteryEnergyLevel_end + chargingDischargingEffeciency * previousTimeSolarEnergyToBattery)
+
+# constraint 30 : the energy supplied from battery to DC is the gap between the energy level at the beginning and the end
+for timeStage in range(0, timeLength) :
+    providerBatteryEnergyToDcDecVarDict = batteryEnergyToDcDecVarList[timeStage]
+    providerBatteryEnergyLevelDecVarDict_beg = batteryEnergyLevelDecVarList_beg[timeStage]
+    providerBatteryEnergyLevelDecVarDict_end = batteryEnergyLevelDecVarList_end[timeStage]
+    for providerIndex in range(0, len(providerList)) :
+        provider = providerList[providerIndex]
         
+        batteryEnergyToDc = providerBatteryEnergyToDcDecVarDict[str(provider)]
+        batteryEnergyLevel_beg = providerBatteryEnergyLevelDecVarDict_beg[str(provider)]
+        batteryEnergyLevel_end = providerBatteryEnergyLevelDecVarDict_end[str(provider)]
+        
+        model.addConstr(batteryEnergyToDc, GRB.EQUAL, batteryEnergyLevel_beg - batteryEnergyLevel_end)
         
 
 
