@@ -303,6 +303,8 @@ vmChangeStateEnergyDict = dict()
 solarEnergyToDcDecVarList = []
 solarEnergyToBatteryDecVarList = []
 batteryEnergyToDcDecVarList = []
+batteryEnergyLevelDecVarList_beg = []
+batteryEnergyLevelDecVarList_end = []
 
 # equation 4 the cost of energy consumption of active VMs
 for timeStage in range(0, timeLength) :
@@ -314,6 +316,8 @@ for timeStage in range(0, timeLength) :
     providerSolarToDcDecVarDict = dict()
     providerSolarToBatteryDecVarDict = dict()
     providerBatteryToDcDecVarDict = dict()
+    providerBatteryEnergyLevelDecVarDict_beg = dict()
+    providerBatteryEnergyLevelDecVarDict_end = dict()
     for area in providerAreaDict :
         providerListOfArea = providerAreaDict[area]
         for provider in providerListOfArea :
@@ -362,6 +366,8 @@ for timeStage in range(0, timeLength) :
             solarToDc = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS)
             solarToBattery = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS)
             batteryToDc = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS)
+            battegyEnergyLevel_beg = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS)
+            batteryEnergyLevel_end = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS)
             
             providerActiveVmEnergyConsumptionDecVarDict[str(provider)] = userActiveVmEnergyConsumptionDecVarDict
             providerNumOfActiveVmsDecVarDict[str(provider)] = userNumOfActiveVmsDecVarDict
@@ -371,6 +377,8 @@ for timeStage in range(0, timeLength) :
             providerSolarToDcDecVarDict[str(provider)] = solarToDc
             providerSolarToBatteryDecVarDict[str(provider)] = solarToBattery
             providerBatteryToDcDecVarDict[str(provider)] = batteryToDc
+            providerBatteryEnergyLevelDecVarDict_beg[str(provider)] = battegyEnergyLevel_beg
+            providerBatteryEnergyLevelDecVarDict_end[str(provider)] = batteryEnergyLevel_end
     
     activeVmEnergyConsumptionDecVarList.append(providerActiveVmEnergyConsumptionDecVarDict)
     numOfActiveVmsDecVarList.append(providerNumOfActiveVmsDecVarDict)
@@ -380,6 +388,8 @@ for timeStage in range(0, timeLength) :
     solarEnergyToDcDecVarList.append(providerSolarToDcDecVarDict)
     solarEnergyToBatteryDecVarList.append(providerSolarToBatteryDecVarDict)
     batteryEnergyToDcDecVarList.append(providerBatteryToDcDecVarDict)
+    batteryEnergyLevelDecVarList_beg.append(providerBatteryEnergyLevelDecVarDict_beg)
+    batteryEnergyLevelDecVarList_end.append(providerBatteryEnergyLevelDecVarDict_end)
                     
                     
 
@@ -1068,7 +1078,21 @@ for providerIndex in range(0, len(providerList)) :
     
     model.addConstr(quicksum(greenEnergyUsageList), GRB.LESS_EQUAL, quicksum(greenEnergyLimitList))
         
-
+# constraint 29 : the energy level at the beginning of next time period is the energy level at the end of this time period plus the energy charged to the battery
+for timeStage in range(1, timeLength) :
+    providerBatteryEnergyLevelDecVarDict_beg = batteryEnergyLevelDecVarList_beg[timeStage]
+    providerPreviousTimeBatteryEnergyLevelDecVarDict_end = batteryEnergyLevelDecVarList_end[timeStage - 1]
+    providerPreviousTimeSolarEnergyToBatteryDecVarDict = solarEnergyToBatteryDecVarList[timeStage - 1]
+    for providerIndex in range(0, len(providerList)) :
+        provider = providerList[providerIndex]
+        
+        batteryEnergyLevel_beg = providerBatteryEnergyLevelDecVarDict_beg[str(provider)]
+        previousTimeBatteryEnergyLevel_end = providerPreviousTimeBatteryEnergyLevelDecVarDict_end[str(provider)]
+        previousTimeSolarEnergyToBattery = providerPreviousTimeSolarEnergyToBatteryDecVarDict[str(provider)]
+        
+        model.addConstr(batteryEnergyLevel_beg, GRB.EQUAL, previousTimeBatteryEnergyLevel_end + chargingDischargingEffeciency * previousTimeSolarEnergyToBattery)
+        
+        
 
 
 
