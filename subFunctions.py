@@ -11,7 +11,7 @@ def getVmTypesList(instanceData) :
     return vmList
 
 # get the list of DCs
-def getProvidersList(instanceData) :
+def getProvidersNameList(instanceData) :
     providerList = []
     for item in instanceData :
         provider = item.provider

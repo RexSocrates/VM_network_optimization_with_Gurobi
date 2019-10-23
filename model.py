@@ -7,7 +7,7 @@ import random
 # get instance data from csv file, get get the lists of vm types and cloud providers from instance data
 
 instanceData = getVirtualResource()
-providerList = getProvidersList(instanceData)
+providerList = getProvidersNameList(instanceData)
 providerAreaDict = getProviderAreaDict(instanceData)
 vmTypeList = getVmTypesList(instanceData)
 storageAndBandwidthPrice = getCostOfStorageBandBandwidth()
@@ -1223,7 +1223,8 @@ for timeStage in range(0, timeLength) :
             utilizationAndOnDemandBandDecVarList.append(onDemandBand)
             
             model.addConstr(quicksum(outFlowDecVarList), GRB.LESS_EQUAL, quicksum(utilizationAndOnDemandBandDecVarList))
-        
+
+# constraint 41 : 
         
                 
         
