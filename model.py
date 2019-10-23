@@ -1189,6 +1189,43 @@ for timeStage in range(0, timeLength) :
                         flowOutDecVarList.append(flowDecVar)
         
         model.addConstr(quicksum(flowInDecVarList), GRB.EQUAL, quicksum(flowOutDecVarList))
+
+# constraint 40 : the sum of flow leaving a router is the sum of utilization and on-demand bandwidth
+for timeStage in range(0, timeLength) :
+    edgeFlowDecVarDict = edgeFlowDecVarList[timeStage]
+    for router in routerData :
+        routerIndex = router.routerIndex
+        routerDirectlyConnectedEdges = router.edges
+        
+        for userIndex in range(0, numOfUsers) :
+            outFlowDecVarList = []
+            
+            for edgeIndex in routerDirectlyConnectedEdges :
+                edgeFlowDecVarDict = edgeFlowDecVarList[timeStage]
+                flowTypeDecVarDict = edgeFlowDecVarDict[str(edgeIndex)]
+                flowDecVar = flowTypeDecVarDict['out'][str(userIndex)]
+                outFlowDecVarList.append(flowDecVar)
+            
+            utilizationAndOnDemandBandDecVarList = []
+            for bandContractLength in [5, 10] :
+                for bandPayment in ['No upfront', 'Partial upfront', 'All upfront'] :
+                    userBandUtilizationDecVarDict = bandUtilizationDecVar[timeStage]
+                    routerBandUtilizationDecVarDict = userBandUtilizationDecVarDict[str(userIndex)]
+                    contractBandUtilizationDecVarDict = routerBandUtilizationDecVarDict[str(routerIndex)]
+                    paymentBandUtilizationDecVarDict = contractBandUtilizationDecVarDict[str(bandContractLength)]
+                    bandUtilization = paymentBandUtilizationDecVarDict[str(bandPayment)]
+                    
+                    utilizationAndOnDemandBandDecVarList.append(bandUtilization)
+                
+            userBandOnDemandDecVarDict = bandOnDemandDecVar[timeStage]
+            routerBandOnDemandDecVarDict = userBandOnDemandDecVarDict[str(userIndex)]
+            onDemandBand = routerBandOnDemandDecVarDict[str(routerIndex)]
+            utilizationAndOnDemandBandDecVarList.append(onDemandBand)
+            
+            model.addConstr(quicksum(outFlowDecVarList), GRB.LESS_EQUAL, quicksum(utilizationAndOnDemandBandDecVarList))
+        
+        
+                
         
         
         
