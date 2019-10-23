@@ -1164,7 +1164,31 @@ for providerIndex in range(0, len(providerList)) :
     # constraint 38
     model.addConstr(batteryEnergyLevel_end, GRB.EQUAL, 0)
     
+# constraint 39 : the flow entering a router is equal to the flow leaving a router
+for timeStage in range(0, timeLength) :
+    edgeFlowDecVarDict = edgeFlowDecVarList[timeStage]
+    for router in routerData :
+        routerIndex = router.routerIndex
+        routerDirectlyConnectedEdges = router.edges
         
+        flowInDecVarList = []
+        flowOutDecVarList = []
+        
+        for edgeIndex in routerDirectlyConnectedEdges :
+            flowTypeDecVarDict = edgeFlowDecVarDict[str(edgeIndex)]
+            for flowTypeIndex in range(2) :
+                flowTypeList = ['in', 'out']
+                flowType = flowTypeList[flowTypeIndex]
+                userFlowDecVarDict = flowTypeDecVarDict[str(flowType)]
+                for userIndex in range(0, numOfUsers) :
+                    flowDecVar = userFlowDecVarDict[str(userIndex)]
+                    
+                    if flowType == 'in' :
+                        flowInDecVarList.append(flowDecVar)
+                    else :
+                        flowOutDecVarList.append(flowDecVar)
+        
+        model.addConstr(quicksum(flowInDecVarList), GRB.EQUAL, quicksum(flowOutDecVarList))
         
         
         
