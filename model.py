@@ -1037,17 +1037,12 @@ for timeStage in range(0, timeLength) :
 '''
         
 # constraint 27 : the sum of energy used to charge the battery and energy directly supply to DC do not exceed the amount of green energy production
-'''
-solarEnergyToDcDecVarList = []
-solarEnergyToBatteryDecVarList = []
-batteryEnergyToDcDecVarList = []
-'''
 # this is the limit of renewable energy production
-greenEnergyLimitList = []
+greenEnergyDecVarLimitList = []
 for timeStage in range(0, timeLength) :
     providerSolarEnergyToDcDecVarDict = solarEnergyToDcDecVarList[timeStage]
     providerSolarEnergyToBatteryDecVarDict = solarEnergyToBatteryDecVarList[timeStage]
-    providerGreenEnergyLimitDict = greenEnergyLimitList[timeStage]
+    providerGreenEnergyLimitDict = greenEnergyDecVarLimitList[timeStage]
     for providerIndex in range(0, len(providerList)) :
         provider = providerList[providerIndex]
         solarEnergyToDc = providerSolarEnergyToDcDecVarDict[str(provider)]
@@ -1056,7 +1051,22 @@ for timeStage in range(0, timeLength) :
         
         model.addConstr(solarEnergyToBattery + solarEnergyToDc, GRB.LESS_EQUAL, greenEnergyLimit)
 
-
+# constraint 28 : the usage of green energy do not exceed the amount of produced renewable energy
+for providerIndex in range(0, len(providerList)) :
+    greenEnergyUsageList = []
+    greenEnergyLimitList = []
+    for timeStage in range(0, timeLength) :
+        providerGreenEnergyUsageDecVarDict = greenEnergyUsageDecVarList[timeStage]
+        providerGreenEnergyLimitDict = greenEnergyDecVarLimitList[timeStage]
+        
+        greenEnergyUsage = providerGreenEnergyUsage[str(provider)]
+        greenEnergyLimit = providerGreenEnergyLimitDict[str(provider)]
+        
+        greenEnergyUsageList.append(greenEnergyUsage)
+        greenEnergyLimitList.append(greenEnergyLimit)
+    
+    model.addConstr(quicksum(greenEnergyUsageList), GRB.LESS_EQUAL, quicksum(greenEnergyLimitList))
+        
 
 
 
