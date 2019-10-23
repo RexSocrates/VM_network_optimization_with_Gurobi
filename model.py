@@ -972,6 +972,7 @@ for timeStage in range(0, timeLength) :
                     model.addConstr(numOfActiveVms, GRB.EQUAL, previousTimeStageNumOfActiveVms + numOfTurnedOnVms - numOfTurnedOffVms)
                     
 # constraint 25, 26
+# constraint 25 : the amount of produced green energy do not exceed the usage of energy
 for timeStage in range(0, timeLength) :
     # constraint 25, 26
     providerGreenEnergyDecVarDict = greenEnergyUsageDecVarList[timeStage]
@@ -1019,7 +1020,7 @@ for timeStage in range(0, timeLength) :
         # constraint 26
         model.addConstr(greenEnergyUsage, GRB.EQUAL, solarEnergyToDc + chargingDischargingEffeciency * batteryEnergyToDc)
         
-# constraint 26
+# constraint 26 : the amount of green energy is the sum of solar panel energy and the battery energy
 '''
 for timeStage in range(0, timeLength) :
     providerGreenEnergyDecVarDict = greenEnergyUsageDecVarList[timeStage]
@@ -1035,7 +1036,25 @@ for timeStage in range(0, timeLength) :
         model.addConstr(greenEnergyUsage, GRB.EQUAL, solarEnergyToDc + chargingDischargingEffeciency * batteryEnergyToDc)
 '''
         
-
+# constraint 27 : the sum of energy used to charge the battery and energy directly supply to DC do not exceed the amount of green energy production
+'''
+solarEnergyToDcDecVarList = []
+solarEnergyToBatteryDecVarList = []
+batteryEnergyToDcDecVarList = []
+'''
+# this is the limit of renewable energy production
+greenEnergyLimitList = []
+for timeStage in range(0, timeLength) :
+    providerSolarEnergyToDcDecVarDict = solarEnergyToDcDecVarList[timeStage]
+    providerSolarEnergyToBatteryDecVarDict = solarEnergyToBatteryDecVarList[timeStage]
+    providerGreenEnergyLimitDict = greenEnergyLimitList[timeStage]
+    for providerIndex in range(0, len(providerList)) :
+        provider = providerList[providerIndex]
+        solarEnergyToDc = providerSolarEnergyToDcDecVarDict[str(provider)]
+        solarEnergyToBattery = providerSolarEnergyToBatteryDecVarDict[str(provider)]
+        greenEnergyLimit = providerGreenEnergyLimitDict[str(provider)]
+        
+        model.addConstr(solarEnergyToBattery + solarEnergyToDc, GRB.LESS_EQUAL, greenEnergyLimit)
 
 
 
