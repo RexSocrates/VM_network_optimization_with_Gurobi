@@ -28,16 +28,16 @@ def getVirtualResource() :
         area = row[0]
         provider = row[1]
         instanceType = row[2]
-        contract = row[3]
+        contract = int(row[3]) * 24 * 365
         paymentOption = row[4]
-        reservationFee = row[5]
-        utilizationFee = row[6]
-        onDemandFee = row[7]
-        hostReq = row[8]
-        memoryReq = row[9]
-        storageReq = row[10]
-        networkReq = row[11]
-        energyConsumption = row[12]
+        reservationFee = float(row[5])
+        utilizationFee = float(row[6])
+        onDemandFee = float(row[7])
+        hostReq = float(row[8])
+        memoryReq = float(row[9])
+        storageReq = float(row[10])
+        networkReq = float(row[11])
+        energyConsumption = float(row[12])
         
         newInstance = VMClass(area, provider, instanceType, contract, paymentOption, reservationFee, utilizationFee, onDemandFee, hostReq, memoryReq, storageReq, networkReq, energyConsumption)
         instanceData.append(newInstance)
@@ -168,7 +168,7 @@ def getCostOfStorageBandBandwidth() :
         for data in rowData[1:] :
             newData = dict()
             region = data[0]
-            newData['storage'] = data[1]
-            newData['bandwidth'] = data[2]
+            newData['storage'] = float(data[1])
+            newData['bandwidth'] = float(data[2])
             outputData[region] = newData
     return outputData

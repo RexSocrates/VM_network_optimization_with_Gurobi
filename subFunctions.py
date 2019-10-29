@@ -48,7 +48,7 @@ def demandGenerator(timeLength, userList, vmTypes) :
 
 # sort the VM data accroding to the providers, VM types, contracts, payment options
 def sortVM(instanceData, providerList, vmTypeList) :
-    contractList = [1, 3]
+    contractList = [1 * 24 * 365, 3 * 24 * 365]
     paymentOptionList = ['NoUpfront', 'PartialUpfront', 'AllUpfront']
     
     # store the sorted VM data
@@ -68,12 +68,20 @@ def sortVM(instanceData, providerList, vmTypeList) :
                         instanceContract = instance.contractLength
                         instancePayment = instance.paymentOption
                         
+                        
                         if instanceProvider == provider and instanceType == vmType and instanceContract == contractLength and instancePayment == payment :
-                            paymentOptionOfContract[str(payment)] == instance
+                            paymentOptionOfContract[str(payment)] = instance
                             break
                 contractOfVmTypes[str(contractLength)] = paymentOptionOfContract
             vmTypesOfProvider[str(vmType)] = contractOfVmTypes
         newVmList[str(provider)] = vmTypesOfProvider
+    '''
+    for pro in providerList :
+        for vmType in vmTypeList :
+            for contractLength in contractList :
+                for payment in paymentOptionList :
+                    print(newVmList[pro][vmType][str(contractLength)][payment])
+    '''
     return newVmList    
 
 # sort the router accorging to the router, contract length and payment options

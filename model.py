@@ -19,6 +19,7 @@ model = Model('VM_network_and_energy_optimization_model')
 timeLength = 3 * 365 * 24
 numOfUsers = len(networkTopology['user'])
 vmContractLengthList = [1 * 24 * 365, 3 * 24 * 365]
+# vmContractLengthList = [1, 3]
 
 # VM demand at each time stage
 vmDemandList = generateVmDemand(timeLength, numOfUsers, vmTypeList)
@@ -165,6 +166,7 @@ for timeStage in range(0, timeLength) :
     vmUtilizationDecVar.append(providerDecVar_uti)
     vmOnDemandDecVar.append(providerDecVar_onDemand)
 
+print('VM COst decision variable complete')
 
 # Bandwidth
 numOfRouters = len(networkTopology['router'])
@@ -285,6 +287,8 @@ for timeStage in range(0, timeLength) :
     bandUtilizationDecVar.append(bandUserDecVar_uti)
     bandOnDemandDecVar.append(bandUserDecVar_onDemand)
 
+print('Bandwidth Cost decision variable complete')
+
 # VM energy
 
 # Power Usage Effectiveness
@@ -391,7 +395,7 @@ for timeStage in range(0, timeLength) :
     batteryEnergyLevelDecVarList_beg.append(providerBatteryEnergyLevelDecVarDict_beg)
     batteryEnergyLevelDecVarList_end.append(providerBatteryEnergyLevelDecVarDict_end)
                     
-                    
+print('VM Energy decision variable complete')
 
 # Network energy
 routerAreaDict = getRouterAreaDict(routerData)
@@ -408,8 +412,8 @@ fullyLoadedRouterEnergyConsumption = 3840
 idleRouterEnergyConsumption = 1000
 # assume that switch the state of router is the 5% of fully loaded energy consumption
 routerChangeStateEnergyConsumption = fullyLoadedRouterEnergyConsumption * 0.05
-# assume that the capacity of each router is 1 Gbps
-routerCapacity = 1.0
+# assume that the capacity of each router is 1,000 Gbps
+routerCapacity = 1000.0
     
 # equation 9 the cost of energy consumption of network flow
 for timeStage in range(0, timeLength) :
@@ -443,6 +447,8 @@ for timeStage in range(0, timeLength) :
     routerOffDecVarList.append(routerOffDecVarDict)
     routerBandwidthUsageDecVarList.append(routerBandwidthUsageDecVarDict)
 
+print('Network Energy decision variable complete')
+
 # network flow decision variables
 edgeList = networkTopology['edges']
 
@@ -463,7 +469,7 @@ for timeStage in range(0, timeLength) :
         edgeFlowDecVarDict[str(edgeIndex)] = flowTypeDecVarDict
     edgeFlowDecVarList.append(edgeFlowDecVarDict)
 
-
+print('Edge flow decision variable complete')
 
 # update model
 model.update()
@@ -560,7 +566,7 @@ for timeStage in range(0, timeLength) :
                     model.addConstr(numOfTurnedOnVm, GRB.GREATER_EQUAL, quicksum(vmUtilizationAndOnDemandDecVarList) - quicksum(previousTimeStageVmUtilizationAndOnDemandDecVarList))
                     model.addConstr(numOfTurnedOffVm, GRB.GREATER_EQUAL, quicksum(previousTimeStageVmUtilizationAndOnDemandDecVarList) - quicksum(vmUtilizationAndOnDemandDecVarList))
                     
-                
+print('Constraint 5, 6, 7, 8 complete')
                 
 
 # constraint 6 : the number of active VMs is the sum of utlization and on-demand VMs
@@ -689,6 +695,8 @@ for timeStage in range(0, timeLength) :
         
         model.addConstr(routerBandwidthUsage, GRB.EQUAL, quicksum(inFlowEdge) + quicksum(outFlowEdge))
         
+print('Constraint 10, 11, 12, 13 complete')
+
 # constraint 12 : the energy consumption of a router
 '''
 for timeStage in range(0, timeLength) :
@@ -743,7 +751,9 @@ for timeStage in range(0, timeLength) :
                         effectiveVmResDecVarList = paymentEffectiveVmResDecVarDict[str(payment)]
                         
                         model.addConstr(vmUtilizationDecVar, GRB.LESS_EQUAL, quicksum(effectiveVmResDecVarList[timeStage]))
-                        
+
+print('Constraint 14 complete')
+
 # constraint 15 : demand constraint
 for timeStage in range(0, timeLength) :
     userVmDemandDict = vmDemandList[timeStage]
@@ -779,6 +789,8 @@ for timeStage in range(0, timeLength) :
                 utlizationAndOnDemandVmDecVarList.append(onDemandDecVar)
             
             model.addConstr(quicksum(utlizationAndOnDemandVmDecVarList), GRB.GREATER_EQUAL, vmDemand)
+
+print('Constraint 15 complete')
             
 # constraint 16, 17, 18 : cloud provider resource upper bound limit
 cloudProvidersDict = getProviderCapacity(networkTopology['provider'])
@@ -840,6 +852,8 @@ for timeStage in range(0, timeLength) :
         # constraint 18 : internal bandwidth constraint
         model.addConstr(quicksum([vmInternalBandReqList[vmIndex] * quicksum(vmTypeUtilizedAndOnDemandDecVarList[vmIndex]) for vmIndex in range(0, len(vmInternalBandReqList))]), GRB.LESS_EQUAL, internalBandLimit)
 
+print('Constraint 16, 17, 18 complete')
+
 # constraint 19 : VM decision variables integer constraint
 for timeStage in range(0, timeLength) :
     for providerIndex in range(0, len(providerList)) :
@@ -863,6 +877,8 @@ for timeStage in range(0, timeLength) :
                 onDemandDecVar = vmTypeDecVarDict_onDemand[str(vmType)]
                 
                 model.addConstr(onDemandDecVar, GRB.GREATER_EQUAL, 0)
+
+print('Constraint 19 complete')
                         
 # constraint 20 : effective bandiwdth
 for userIndex in range(0, numOfUsers) :
@@ -887,7 +903,9 @@ for userIndex in range(0, numOfUsers) :
                     bandUtilization = paymentBandUtilization[str(bandPayment)]
                     
                     model.addConstr(bandUtilization, GRB.LESS_EQUAL, quicksum(effectiveBandDecVarAtCurrentTimeStage))
-                    
+
+print('Constraint 20 complete')
+
 # constraint 21 : router's bandwidth limit
 for timeStage in range(0, timeLength) :
     for router in routerData :
@@ -919,6 +937,8 @@ for timeStage in range(0, timeLength) :
             
         model.addConstr(quicksum(bandUtilizationAndOnDemandDecVarList), GRB.LESS_EQUAL, routerStatus * 1.0)
 
+print('Constraint 21 complete')
+
 # constraint 22 : router status initialization
 for router in routerData :
     routerIndex = router.routerIndex
@@ -926,6 +946,8 @@ for router in routerData :
     routerStatus = routerStatusDecVarDict[str(routerIndex)]
     
     model.addConstr(routerStatus, GRB.EQUAL, 0)
+
+print('Constraint 22 complete')
 
 # constraint 23 : the non-negative constraint for bandwidth decision variables
 for timeStage in range(0, timeLength) :
@@ -952,6 +974,8 @@ for timeStage in range(0, timeLength) :
                     model.addConstr(bandDecVar_res, GRB.GREATER_EQUAL, 0)
                     model.addConstr(bandDecVar_uti, GRB.GREATER_EQUAL, 0)
             model.addConstr(bandDecVar_onDemand, GRB.GREATER_EQUAL, 0)
+
+print('Constraint 23 complete')
 
 # constraint 24 : the relationship between the number of active VMs, turned on / off VMs
 for timeStage in range(0, timeLength) :
@@ -980,7 +1004,9 @@ for timeStage in range(0, timeLength) :
                     previousTimeStageNumOfActiveVms = previousTimeStageNumOfActiveVmsDecVarDict[str(vmType)]
                     
                     model.addConstr(numOfActiveVms, GRB.EQUAL, previousTimeStageNumOfActiveVms + numOfTurnedOnVms - numOfTurnedOffVms)
-                    
+
+print('Constraint 24 complete')
+
 # constraint 25, 26
 # constraint 25 : the amount of produced green energy do not exceed the usage of energy
 for timeStage in range(0, timeLength) :
@@ -1029,7 +1055,9 @@ for timeStage in range(0, timeLength) :
         model.addConstr(greenEnergyUsage, GRB.LESS_EQUAL, valueOfPUE * quicksum([energyConsumptionDecVarList[index] * energyConsumptionParameterList[index] for index in range(0, len(energyConsumptionDecVarList))]))
         # constraint 26
         model.addConstr(greenEnergyUsage, GRB.EQUAL, solarEnergyToDc + chargingDischargingEffeciency * batteryEnergyToDc)
-        
+
+print('Constraint 25, 26 complete')
+
 # constraint 26 : the amount of green energy is the sum of solar panel energy and the battery energy
 '''
 for timeStage in range(0, timeLength) :
@@ -1061,6 +1089,8 @@ for timeStage in range(0, timeLength) :
         
         model.addConstr(solarEnergyToBattery + solarEnergyToDc, GRB.LESS_EQUAL, greenEnergyLimit)
 
+print('Constraint 27 complete')
+
 # constraint 28 : the usage of green energy do not exceed the amount of produced renewable energy
 for providerIndex in range(0, len(providerList)) :
     provider = providerList[providerIndex]
@@ -1077,7 +1107,9 @@ for providerIndex in range(0, len(providerList)) :
         greenEnergyLimitList.append(greenEnergyLimit)
     
     model.addConstr(quicksum(greenEnergyUsageList), GRB.LESS_EQUAL, quicksum(greenEnergyLimitList))
-        
+
+print('Constraint 28 complete')
+
 # constraint 29 : the energy level at the beginning of next time period is the energy level at the end of this time period plus the energy charged to the battery
 for timeStage in range(1, timeLength) :
     providerBatteryEnergyLevelDecVarDict_beg = batteryEnergyLevelDecVarList_beg[timeStage]
@@ -1092,6 +1124,8 @@ for timeStage in range(1, timeLength) :
         
         model.addConstr(batteryEnergyLevel_beg, GRB.EQUAL, previousTimeBatteryEnergyLevel_end + chargingDischargingEffeciency * previousTimeSolarEnergyToBattery)
 
+print('Constraint 29 complete')
+
 # constraint 30 : the energy supplied from battery to DC is the gap between the energy level at the beginning and the end
 for timeStage in range(0, timeLength) :
     providerBatteryEnergyToDcDecVarDict = batteryEnergyToDcDecVarList[timeStage]
@@ -1105,7 +1139,9 @@ for timeStage in range(0, timeLength) :
         batteryEnergyLevel_end = providerBatteryEnergyLevelDecVarDict_end[str(provider)]
         
         model.addConstr(batteryEnergyToDc, GRB.EQUAL, batteryEnergyLevel_beg - batteryEnergyLevel_end)
-        
+
+print('Constraint 30 complete')
+
 # constraint 31 : the energy that the battery can supply do not exceed the energy level of this battery at the beginning
 for timeStage in range(0, timeLength) :
     providerBatteryEnergyToDcDecVarDict = batteryEnergyToDcDecVarList[timeStage]
@@ -1117,6 +1153,8 @@ for timeStage in range(0, timeLength) :
         batteryEnergyLevel_beg = providerBatteryEnergyLevelDecVarDict_beg[str(provider)]
         
         model.addConstr(batteryEnergyToDc, GRB.LESS_EQUAL, batteryEnergyLevel_beg)
+
+print('Constraint 31 complete')
 
 # constraint 32, 33 : bettery energy level limit
 batteryEnergyCapacity = 1486
@@ -1131,7 +1169,9 @@ for timeStage in range(0, timeLength) :
         
         model.addConstr(batteryEnergyLevel_beg, GRB.LESS_EQUAL, batteryEnergyCapacity)
         model.addConstr(batteryEnergyLevel_end, GRB.LESS_EQUAL, batteryEnergyCapacity)
-    
+
+print('Constraint 32, 33 complete')
+
 # constraint 34, 35 : the limit of battery charging and discharging
 # assume that the c rate of the battery is 73 Ah permodule and there are 5 modules in a battery
 chargingDischargingLimit = 73 * 5
@@ -1149,6 +1189,8 @@ for timeStage in range(0, timeLength) :
         # constraint 35
         model.addConstr(batteryEnergyToDc, GRB.LESS_EQUAL, chargingDischargingLimit)
 
+print('Constraint 34, 35 complete')
+
 # constraint 36, 37, 38 : initialize the battery energy level and theenergy that can supplied by the battery
 for providerIndex in range(0, len(providerList)) :
     provider = providerList[providerIndex]
@@ -1163,7 +1205,9 @@ for providerIndex in range(0, len(providerList)) :
     model.addConstr(batteryEnergyLevel_beg, GRB.EQUAL, 0)
     # constraint 38
     model.addConstr(batteryEnergyLevel_end, GRB.EQUAL, 0)
-    
+
+print('Constraint 36, 37, 38 complete')
+
 # constraint 39 : the flow entering a router is equal to the flow leaving a router
 for timeStage in range(0, timeLength) :
     edgeFlowDecVarDict = edgeFlowDecVarList[timeStage]
@@ -1189,6 +1233,8 @@ for timeStage in range(0, timeLength) :
                         flowOutDecVarList.append(flowDecVar)
         
         model.addConstr(quicksum(flowInDecVarList), GRB.EQUAL, quicksum(flowOutDecVarList))
+
+print('Constraint 39 complete')
 
 # constraint 40 : the sum of flow leaving a router is the sum of utilization and on-demand bandwidth
 for timeStage in range(0, timeLength) :
@@ -1223,6 +1269,8 @@ for timeStage in range(0, timeLength) :
             utilizationAndOnDemandBandDecVarList.append(onDemandBand)
             
             model.addConstr(quicksum(outFlowDecVarList), GRB.LESS_EQUAL, quicksum(utilizationAndOnDemandBandDecVarList))
+
+print('Constraint 40 complete')
 
 # constraint 41 : the bandwidth requirement of VMs in a provider should be satisfied
 outboundBandReqDict = getOutboundBandwidthRequirement(instanceData)
@@ -1270,7 +1318,9 @@ for timeStage in range(0, timeLength) :
                 userEdgeFlowDecVarList.append(flowDecVar)
             
             model.addConstr(quicksum(userEdgeFlowDecVarList), GRB.GREATER_EQUAL, quicksum([vmTypeUtilizationAndOnDemandDict[str(vmType)] * outboundBandReqDict[str(vmType)] for vmType in vmTypeList]))
-            
+
+print('Constraint 41 complete')
+
 # constraint 42 : the bandwidth required by the flow entering a user should be satistied
 userEdgeList = networkTopology['user']
 for timeStage in range(0, timeLength) :
@@ -1303,6 +1353,8 @@ for timeStage in range(0, timeLength) :
         
         model.addConstr(quicksum(userFlowInEdgeDecVarList), GRB.GREATER_EQUAL, quicksum(flowOutDecVarListOfProviders))
 
+print('Constraint 42 complete')
+
 # constraint 43 : the decision variables of flow should greater than 0
 for timeStage in range(0, timeLength) :
     edgeFlowDecVarDict = edgeFlowDecVarList[timeStage]
@@ -1314,6 +1366,11 @@ for timeStage in range(0, timeLength) :
                 flow = [str(userIndex)]
                 
                 model.addConstr(flow, GRB.GREATER_EQUAL, 0)
-        
+
+print('Constraint 43 complete')
+
+model.write("thesis.lp")
 
 
+# model.optimize()
+print("Objective function value : ", model.objVal)
