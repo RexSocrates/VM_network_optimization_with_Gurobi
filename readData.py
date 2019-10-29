@@ -58,13 +58,13 @@ def getRouterBandwidthPrice(networkTopology) :
         routerData = []
         
         for row in row[1:] :
-            routerIndex = row[0]
+            routerIndex = int(row[0])
             routerArea = row[1]
-            contractLength = row[2]
+            contractLength = int(row[2])
             paymentOption = row[3]
-            initialResFee = row[4]
-            utilizationFee = row[5]
-            onDemandFee = row[6]
+            initialResFee = float(row[4])
+            utilizationFee = float(row[5])
+            onDemandFee = float(row[6])
             
             edges = routerEdgesList[routerIndex]
             
@@ -89,7 +89,7 @@ def readEnergyPricingFile() :
         
         areaPriceList = []
         for item in areaPrice :
-            areaPriceList.append(item)
+            areaPriceList.append(float(item))
         
         newAreaEnergyPricingData = EnergyPrice(area, areaPriceList)
         
@@ -111,10 +111,10 @@ def getProviderCapacity(providerNetworkEdges) :
         cloudProvidersDict = dict()
         for data in rowData[1:] :
             provider = row[0]
-            coresLimit = row[1]
-            memoryLimit = row[2]
-            storageLimit = row[3]
-            internalBandwidthLimit = row[4]
+            coresLimit = float(row[1])
+            memoryLimit = float(row[2])
+            storageLimit = float(row[3])
+            internalBandwidthLimit = float(row[4])
             
             directlyConnectedEdges = providerNetworkEdges[str(provider)]
             
@@ -142,7 +142,7 @@ def getNetworkTopology() :
             node = row[0]
             edges = row[1:]
             
-            directlyConnectedEdges = [edgeIndex for edgeIndex in range(0, len(edges)) if edges[edgeIndex] == 1]
+            directlyConnectedEdges = [edgeIndex for edgeIndex in range(0, len(edges)) if edges[edgeIndex] == '1']
             
             if node[0] == 'u' :
                 networkDict['user'].append(directlyConnectedEdges)
