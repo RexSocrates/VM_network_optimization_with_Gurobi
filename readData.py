@@ -90,7 +90,8 @@ def readEnergyPricingFile() :
         
         areaPriceList = []
         for item in areaPrice :
-            areaPriceList.append(float(item))
+            # transfer the price of each megawatt-hour to the price of each kilowatt-hour
+            areaPriceList.append(float(item) / 1000)
         
         newAreaEnergyPricingData = EnergyPrice(area, areaPriceList)
         
@@ -111,11 +112,11 @@ def getProviderCapacity(providerNetworkEdges) :
         column = rowData[0]
         cloudProvidersDict = dict()
         for data in rowData[1:] :
-            provider = row[0]
-            coresLimit = float(row[1])
-            memoryLimit = float(row[2])
-            storageLimit = float(row[3])
-            internalBandwidthLimit = float(row[4])
+            provider = data[0]
+            coresLimit = float(data[1])
+            memoryLimit = float(data[2])
+            storageLimit = float(data[3])
+            internalBandwidthLimit = float(data[4])
             
             directlyConnectedEdges = providerNetworkEdges[str(provider)]
             
@@ -148,7 +149,7 @@ def getNetworkTopology() :
             if node[0] == 'u' :
                 networkDict['user'].append(directlyConnectedEdges)
             elif node[0] == 'p' :
-                nodeSplitList = node.split('-')
+                nodeSplitList = node.split('-', 1)
                 providerName = nodeSplitList[1]
                 networkDict['provider'][str(providerName)] = directlyConnectedEdges
             else :
@@ -173,3 +174,15 @@ def getCostOfStorageBandBandwidth() :
             newData['bandwidth'] = float(data[2])
             outputData[region] = newData
     return outputData
+
+def getGreenEnergyUsageLimit(timeLength, providerList) :
+    greenEnergyUsageLimitList = []
+    for timeStage in range(0, timeLength) :
+        providerGreenEnergyLimitDict = dict()
+        for providerIndex in range(0, len(providerList)) :
+            provider = providerList[providerIndex]
+            greenEnergyLimit = 20
+            providerGreenEnergyLimitDict[str(provider)] = greenEnergyLimit
+        greenEnergyUsageLimitList.append(providerGreenEnergyLimitDict)
+    return greenEnergyUsageLimitList
+            

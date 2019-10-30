@@ -203,14 +203,14 @@ for userIndex in range(0, numOfUsers) :
 
 # equation 3 the cost of network bandwidth
 for timeStage in range(0, timeLength) :
-    bandUserDecVar_res = []
-    bandUserDecVar_uti = []
-    bandUserDecVar_onDemand = []
+    bandUserDecVar_res = dict()
+    bandUserDecVar_uti = dict()
+    bandUserDecVar_onDemand = dict()
     
     for userIndex in range(0, numOfUsers) :
-        bandRouterDecVar_res = []
-        bandRouterDecVar_uti = []
-        bandRouterDecVar_onDemand = []
+        bandRouterDecVar_res = dict()
+        bandRouterDecVar_uti = dict()
+        bandRouterDecVar_onDemand = dict()
         
         for routerIndex in range(0, numOfRouters) :
             bandContractDecVar_res = dict()
@@ -268,9 +268,9 @@ for timeStage in range(0, timeLength) :
             
             bandOnDemand = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS)
             
-            bandRouterDecVar_res.append(bandContractDecVar_res)
-            bandRouterDecVar_uti.append(bandContractDecVar_uti)
-            bandRouterDecVar_onDemand.append(bandOnDemand)
+            bandRouterDecVar_res[str(routerIndex)] = bandContractDecVar_res
+            bandRouterDecVar_uti[str(routerIndex)] = bandContractDecVar_uti
+            bandRouterDecVar_onDemand[str(routerIndex)] = bandOnDemand
             
             # add on demand decision to the list
             bandwidthCostDecVarList.append(bandOnDemand)
@@ -279,9 +279,9 @@ for timeStage in range(0, timeLength) :
             bandwidthCostParameterList.append(routerOnDemandFee)
             
         
-        bandUserDecVar_res.append(bandRouterDecVar_res)
-        bandUserDecVar_uti.append(bandRouterDecVar_uti)
-        bandUserDecVar_onDemand.append(bandRouterDecVar_onDemand)
+        bandUserDecVar_res[str(userIndex)] = bandRouterDecVar_res
+        bandUserDecVar_uti[str(userIndex)] = bandRouterDecVar_uti
+        bandUserDecVar_onDemand[str(userIndex)] = bandRouterDecVar_onDemand
         
     bandResDecVar.append(bandUserDecVar_res)
     bandUtilizationDecVar.append(bandUserDecVar_uti)
@@ -939,7 +939,7 @@ for userIndex in range(0, numOfUsers) :
             for bandPayment in ['No upfront', 'Partial upfront', 'All upfront'] :
                 for timeStage in range(0, timeLength) :
                     # effective bandwidth
-                    routerEffectiveBandDecVarDict = effectiveBandDecVarDict[timeStage]
+                    routerEffectiveBandDecVarDict = effectiveBandDecVarDict[str(userIndex)]
                     contractEffectiveDecVarDict = routerEffectiveBandDecVarDict[str(routerIndex)]
                     paymentEffectiveDecVarDict = contractEffectiveDecVarDict[str(bandContractLength)]
                     effectiveBandDecVarList = paymentEffectiveDecVarDict[str(bandPayment)]
@@ -1019,8 +1019,8 @@ for timeStage in range(0, timeLength) :
                 paymentBandDecVarDict_res = contractBandDecVarDict_res[str(bandContractLength)]
                 paymentBandDecVarDict_uti = contractBandDecVarDict_uti[str(bandContractLength)]
                 for bandPayment in ['No upfront', 'Partial upfront', 'All upfront'] :
-                    bandDecVar_res = contractBandDecVarDict_res[str(bandPayment)]
-                    bandDecVar_uti = contractBandDecVarDict_uti[str(bandPayment)]
+                    bandDecVar_res = paymentBandDecVarDict_res[str(bandPayment)]
+                    bandDecVar_uti = paymentBandDecVarDict_uti[str(bandPayment)]
                     
                     model.addConstr(bandDecVar_res, GRB.GREATER_EQUAL, 0)
                     model.addConstr(bandDecVar_uti, GRB.GREATER_EQUAL, 0)
@@ -1127,11 +1127,11 @@ for timeStage in range(0, timeLength) :
         
 # constraint 27 : the sum of energy used to charge the battery and energy directly supply to DC do not exceed the amount of green energy production
 # this is the limit of renewable energy production
-greenEnergyDecVarLimitList = []
+greenEnergyUsageLimitList = getGreenEnergyUsageLimit(timeLength, providerList)
 for timeStage in range(0, timeLength) :
     providerSolarEnergyToDcDecVarDict = solarEnergyToDcDecVarList[timeStage]
     providerSolarEnergyToBatteryDecVarDict = solarEnergyToBatteryDecVarList[timeStage]
-    providerGreenEnergyLimitDict = greenEnergyDecVarLimitList[timeStage]
+    providerGreenEnergyLimitDict = greenEnergyUsageLimitList[timeStage]
     for providerIndex in range(0, len(providerList)) :
         provider = providerList[providerIndex]
         solarEnergyToDc = providerSolarEnergyToDcDecVarDict[str(provider)]
@@ -1149,9 +1149,9 @@ for providerIndex in range(0, len(providerList)) :
     greenEnergyLimitList = []
     for timeStage in range(0, timeLength) :
         providerGreenEnergyUsageDecVarDict = greenEnergyUsageDecVarList[timeStage]
-        providerGreenEnergyLimitDict = greenEnergyDecVarLimitList[timeStage]
+        providerGreenEnergyLimitDict = greenEnergyUsageLimitList[timeStage]
         
-        greenEnergyUsage = providerGreenEnergyUsage[str(provider)]
+        greenEnergyUsage = providerGreenEnergyUsageDecVarDict[str(provider)]
         greenEnergyLimit = providerGreenEnergyLimitDict[str(provider)]
         
         greenEnergyUsageList.append(greenEnergyUsage)
@@ -1368,7 +1368,7 @@ for timeStage in range(0, timeLength) :
                 
                 userEdgeFlowDecVarList.append(flowDecVar)
             
-            model.addConstr(quicksum(userEdgeFlowDecVarList), GRB.GREATER_EQUAL, quicksum([vmTypeUtilizationAndOnDemandDict[str(vmType)] * outboundBandReqDict[str(vmType)] for vmType in vmTypeList]))
+            model.addConstr(quicksum(userEdgeFlowDecVarList), GRB.GREATER_EQUAL, quicksum([outboundBandReqDict[str(vmType)] * quicksum(vmTypeUtilizationAndOnDemandDict[str(vmType)])]))
 
 print('Constraint 41 complete')
 
@@ -1414,7 +1414,7 @@ for timeStage in range(0, timeLength) :
         for flowType in ['in', 'out'] :
             userFlowDecVarDict = flowTypeDecVarDict[str(flowType)]
             for userIndex in range(0, numOfUsers) :
-                flow = [str(userIndex)]
+                flow = userFlowDecVarDict[str(userIndex)]
                 
                 model.addConstr(flow, GRB.GREATER_EQUAL, 0)
 
@@ -1423,5 +1423,5 @@ print('Constraint 43 complete')
 model.write("thesis.lp")
 
 
-# model.optimize()
+model.optimize()
 print("Objective function value : ", model.objVal)
