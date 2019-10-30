@@ -16,9 +16,9 @@ networkTopology = getNetworkTopology()
 
 model = Model('VM_network_and_energy_optimization_model')
 
-timeLength = 3 * 365 * 24
+timeLength = 500
 numOfUsers = len(networkTopology['user'])
-vmContractLengthList = [1 * 24 * 365, 3 * 24 * 365]
+vmContractLengthList = [10, 30]
 # vmContractLengthList = [1, 3]
 
 # VM demand at each time stage
@@ -166,7 +166,7 @@ for timeStage in range(0, timeLength) :
     vmUtilizationDecVar.append(providerDecVar_uti)
     vmOnDemandDecVar.append(providerDecVar_onDemand)
 
-print('VM COst decision variable complete')
+print('VM Cost decision variable complete')
 
 # Bandwidth
 numOfRouters = len(networkTopology['router'])
@@ -254,7 +254,7 @@ for timeStage in range(0, timeLength) :
                     bandwidthCostParameterList.append(routerUtilizationFee)
                     
                     # add the decision variables to the effective bandiwdth list
-                    routerEffectiveBandDecVarDict = routerEffectiveBandDecVarDict[str(userIndex)]
+                    routerEffectiveBandDecVarDict = effectiveBandDecVarDict[str(userIndex)]
                     contractEffectiveBandDecVarDict = routerEffectiveBandDecVarDict[str(routerIndex)]
                     paymentEffectiveBandDecVarDict = contractEffectiveBandDecVarDict[str(bandResContractLength)]
                     effectiveBandDecVarList = paymentEffectiveBandDecVarDict[str(bandPaymentOption)]
@@ -298,16 +298,27 @@ energyPriceDict = readEnergyPricingFile()
 sortedEnergyPrice = sortEnergyPrice(energyPriceDict, timeLength)
 
 # the list used to calculate the VM energy consumption
+# the energy consumption of active VMs
 activeVmEnergyConsumptionDecVarList = []
+# the number of active VMs owned by each user
 numOfActiveVmsDecVarList = []
+# the number of VMs turned by each user
 turnedOnVmVarList = []
+# the number of VMs turned off by each user
 turnedOffVmVarList = []
+# the green energy usage of each provider
 greenEnergyUsageDecVarList = []
+# record the energy consumption when a VM is turned on or off
 vmChangeStateEnergyDict = dict()
+# the amount of energy that solar panals supply DC
 solarEnergyToDcDecVarList = []
+# the amount of energy that solar panals charge the battery
 solarEnergyToBatteryDecVarList = []
+# the amount of energy that battery supplies DC
 batteryEnergyToDcDecVarList = []
+# the energy level of a battery at the beginning of each time period
 batteryEnergyLevelDecVarList_beg = []
+# the energy level of a battery at the end of each time period
 batteryEnergyLevelDecVarList_end = []
 
 # equation 4 the cost of energy consumption of active VMs
@@ -401,10 +412,15 @@ print('VM Energy decision variable complete')
 routerAreaDict = getRouterAreaDict(routerData)
 
 # decision variables
+# the energy consumption of each router
 routerEnergyConsumptionDecVarList = []
+# the statement of each router which is represented as binary bariables
 routerStatusDecVarList = []
+# if a router is turned on in current time period, the value of this variable is gonna be 1
 routerOnDecVarList = []
+# if a router is turned off in current time period, the value of this variable is gonna be 1
 routerOffDecVarList = []
+# the bandwidth usage, which is calculated by the sum of flow of edges directly connected to the router
 routerBandwidthUsageDecVarList = []
 
 # a fully loaded router consume 3.84 KW
@@ -475,13 +491,21 @@ print('Edge flow decision variable complete')
 model.update()
 
 # equation 1 total cost function
-model.setObjective(quicksum([vmCostDecVarList[i] * vmCostParameterList[i] for i in range(0, len(vmCostDecVarList))]) + quicksum(bandwidthCostDecVarList[i] * bandwidthCostParameterList[i] for i in range(0, len(bandwidthCostDecVarList))) + quicksum([sortedEnergyPrice[timeStage][area] * quicksum([valueOfPUE * quicksum([activeVmEnergyConsumptionDecVarList[timeStage][str(provider)][str(userIndex)][str(vmTypeList[vmTypeIndex])] + changeStateEnergyConsumption[str(vmTypeList[vmTypeIndex])] * turnedOnVmVarList[timeStage][str(provider)][str(userIndex)][str(vmTypeList[vmTypeIndex])] + changeStateEnergyConsumption[str(vmTypeList[vmTypeIndex])] * turnedOffVmVarList[timeStage][str(provider)][str(userIndex)][str(vmTypeList[vmTypeIndex])] for userIndex in range(0, numOfUsers) for vmTypeIndex in range(0, len(vmTypeList))]) - greenEnergyUsageDecVarList[timeStage][str(provider)] for provider in providerAreaDict[area]]) for timeStage in range(0, timeLength) for area in providerAreaDict]) + quicksum([sortedEnergyPrice[timeStage][area] * quicksum([routerEnergyConsumptionDecVarList[timeStage][router.routerIndex] + routerChangeStateEnergyConsumption * routerOnDecVarList[timeStage][router.routerIndex] + routerChangeStateEnergyConsumption * routerOffDecVarList[timeStage][router.routerIndex] for router in routerAreaDict[area]]) for timeStage in range(0, timeLength) for area in routerAreaDict]), GRB.MINIMIZE)
+model.setObjective(quicksum([vmCostDecVarList[index] * vmCostParameterList[index] for index in range(0, len(vmCostDecVarList))]) + quicksum([bandwidthCostDecVarList[index] * bandwidthCostParameterList[index] for index in range(0, len(bandwidthCostDecVarList))]) + quicksum([sortedEnergyPrice[timeStage][str(area)] * quicksum([valueOfPUE * quicksum([activeVmEnergyConsumptionDecVarList[timeStage][str(provider)][str(userIndex)][str(vmType)] + vmChangeStateEnergyDict[str(vmType)] * turnedOnVmVarList[timeStage][str(provider)][str(userIndex)][str(vmType)] + vmChangeStateEnergyDict[str(vmType)] * turnedOffVmVarList[timeStage][str(provider)][str(userIndex)][str(vmType)] for userIndex in range(0, numOfUsers) for vmType in vmTypeList]) - greenEnergyUsageDecVarList[timeStage][str(provider)] for provider in providerAreaDict[area]]) for timeStage in range(0, timeLength) for area in providerAreaDict]) + quicksum([sortedEnergyPrice[timeStage][str(area)] * quicksum([routerEnergyConsumptionDecVarList[timeStage][str(router.routerIndex)] + routerChangeStateEnergyConsumption * routerOnDecVarList[timeStage][str(router.routerIndex)] + routerChangeStateEnergyConsumption * routerOffDecVarList[timeStage][str(router.routerIndex)] for router in routerAreaDict[area]]) for timeStage in range(0, timeLength) for area in routerAreaDict]), GRB.MINIMIZE)
+
+# The cost of VM usage objective function
+# quicksum([vmCostDecVarList[index] * vmCostParameterList[index] for index in range(0, len(vmCostDecVarList))])
+
+# The cost of bandwidth usage objective function
+# quicksum([bandwidthCostDecVarList[index] * bandwidthCostParameterList[index] for index in range(0, len(bandwidthCostDecVarList))])
 
 # VM energy objective function
-# quicksum([sortedEnergyPrice[timeStage][area] * quicksum([valueOfPUE * quicksum([activeVmDecVarList[timeStage][str(provider)][str(userIndex)][str(vmTypeList[vmTypeIndex])] + turnedOnVmVarList[timeStage][str(provider)][str(userIndex)][str(vmTypeList[vmTypeIndex])] + turnedOffVmVarList[timeStage][str(provider)][str(userIndex)][str(vmTypeList[vmTypeIndex])] for userIndex in range(0, numOfUsers) for vmTypeIndex in range(0, len(vmTypeList))]) - greenEnergyUsageDecVarList[timeStage][str(provider)] for provider in providerAreaDict[area]]) for timeStage in range(0, timeLength) for area in providerAreaDict])
+# quicksum([sortedEnergyPrice[timeStage][str(area)] * quicksum([valueOfPUE * quicksum([activeVmEnergyConsumptionDecVarList[timeStage][str(provider)][str(userIndex)][str(vmType)] + vmChangeStateEnergyDict[str(vmType)] * turnedOnVmVarList[timeStage][str(provider)][str(userIndex)][str(vmType)] + vmChangeStateEnergyDict[str(vmType)] * turnedOffVmVarList[timeStage][str(provider)][str(userIndex)][str(vmType)] for userIndex in range(0, numOfUsers) for vmType in vmTypeList]) - greenEnergyUsageDecVarList[timeStage][str(provider)] for provider in providerAreaDict[area]]) for timeStage in range(0, timeLength) for area in providerAreaDict])
 
-# network energy
-# quicksum([sortedEnergyPrice[timeStage][area] * quicksum([routerEnergyConsumptionDecVarList[timeStage][router.routerIndex] + routerChangeStateEnergyConsumption * routerOnDecVarList[timeStage][router.routerIndex] + routerChangeStateEnergyConsumption * routerOffDecVarList[timeStage][router.routerIndex] for router in routerAreaDict[area]]) for timeStage in range(0, timeLength) for area in routerAreaDict])
+# network energy objective function
+# quicksum([sortedEnergyPrice[timeStage][str(area)] * quicksum([routerEnergyConsumptionDecVarList[timeStage][str(router.routerIndex)] + routerChangeStateEnergyConsumption * routerOnDecVarList[timeStage][str(router.routerIndex)] + routerChangeStateEnergyConsumption * routerOffDecVarList[timeStage][str(router.routerIndex)] for router in routerAreaDict[area]]) for timeStage in range(0, timeLength) for area in routerAreaDict])
+
+print('Total cost objective function complete')
 
 # add constraints
 
@@ -525,7 +549,7 @@ for timeStage in range(0, timeLength) :
                 
                 vmDictOfProvider = sortedVmList[str(provider)]
                 contractDictOfVmType = vmDictOfProvider[str(vmType)]
-                paymentDictOfContract = contractDictOfVmType[str(1)]
+                paymentDictOfContract = contractDictOfVmType[str(vmContractLengthList[0])]
                 vmData = paymentDictOfContract['NoUpfront']
                 
                 energyConsumptionOfVmType = vmData.energyConsumption
@@ -560,7 +584,7 @@ for timeStage in range(0, timeLength) :
                     previousTimeStageUtilizedVmDecVar = previousTimeStageVmDecVar_uti[str(vmType)]
                     previousTimeStageOnDemandDecVar = previousTimeStageVmDecVar_onDemand[str(vmType)]
                     
-                    previousTimeStageVmUtilizationAndOnDemandDecVarList = [previousTimeStageUtilizedVmDecVar[str(contract)][str(payment)] for contract in [1, 3] for payment in ['NoUpfront', 'PartialUpfront', 'AllUpfront']]
+                    previousTimeStageVmUtilizationAndOnDemandDecVarList = [previousTimeStageUtilizedVmDecVar[str(contract)][str(payment)] for contract in vmContractLengthList for payment in ['NoUpfront', 'PartialUpfront', 'AllUpfront']]
                     previousTimeStageVmUtilizationAndOnDemandDecVarList.append(previousTimeStageOnDemandDecVar)
                     
                     model.addConstr(numOfTurnedOnVm, GRB.GREATER_EQUAL, quicksum(vmUtilizationAndOnDemandDecVarList) - quicksum(previousTimeStageVmUtilizationAndOnDemandDecVarList))
@@ -690,10 +714,24 @@ for timeStage in range(0, timeLength) :
         # constraint 13
         routerDirectlyConnectedEdges = router.edges
         
-        inFlowEdge = [edgeFlowDecVarDict[str(edgeIndex)]['in'][str(userIndex)] for edgeIndex in routerDirectlyConnectedEdges for userIndex in range(0, numOfUsers)]
-        outFlowEdge = [edgeFlowDecVarDict[str(edgeIndex)]['out'][str(userIndex)] for edgeIndex in routerDirectlyConnectedEdges for userIndex in range(0, numOfUsers)]
+        edgeInFlow = []
+        edgeOutFlow = []
         
-        model.addConstr(routerBandwidthUsage, GRB.EQUAL, quicksum(inFlowEdge) + quicksum(outFlowEdge))
+        for edgeIndex in routerDirectlyConnectedEdges :
+            flowTypeDecVarDict = edgeFlowDecVarDict[str(edgeIndex)]
+            
+            flowInDecVarDict = flowTypeDecVarDict['in']
+            flowOutDecVarDict = flowTypeDecVarDict['out']
+            
+            for userIndex in range(0, numOfUsers) :
+                userFlowIn = flowInDecVarDict[str(userIndex)]
+                userFlowOut = flowOutDecVarDict[str(userIndex)]
+                
+                edgeInFlow.append(userFlowIn)
+                edgeOutFlow.append(userFlowOut)
+        
+        
+        model.addConstr(routerBandwidthUsage, GRB.EQUAL, quicksum(edgeInFlow) + quicksum(edgeOutFlow))
         
 print('Constraint 10, 11, 12, 13 complete')
 
@@ -722,10 +760,23 @@ for timeStage in range(0, timeLength) :
         routerDirectlyConnectedEdges = router.edges
         routerBandwidthUsage = routerBandwidthUsageDecVarDict[str(routerIndex)]
         
-        inFlowEdge = [edgeFlowDecVarDict[str(edgeIndex)]['in'][str(userIndex)] for edgeIndex in routerDirectlyConnectedEdges for userIndex in range(0, numOfUsers)]
-        outFlowEdge = [edgeFlowDecVarDict[str(edgeIndex)]['out'][str(userIndex)] for edgeIndex in routerDirectlyConnectedEdges for userIndex in range(0, numOfUsers)]
+        edgeInFlow = []
+        edgeOutFlow = []
         
-        model.addConstr(routerBandwidthUsage, GRB.EQUAL, quicksum(inFlowEdge) + quicksum(outFlowEdge))
+        for edgeIndex in routerDirectlyConnectedEdges :
+            flowTypeDecVarDict = edgeFlowDecVarDict[str(edgeIndex)]
+            
+            flowInDecVarDict = flowTypeDecVarDict['in']
+            flowOutDecVarDict = flowTypeDecVarDict['out']
+            
+            for userIndex in range(0, numOfUsers) :
+                userFlowIn = flowInDecVarDict[str(userIndex)]
+                userFlowOut = flowOutDecVarDict[str(userIndex)]
+                
+                edgeInFlow.append(userFlowIn)
+                edgeOutFlow.append(userFlowOut)
+        
+        model.addConstr(routerBandwidthUsage, GRB.EQUAL, quicksum(edgeInFlow) + quicksum(edgeOutFlow))
 '''
 
 # constraint 14 : effective VM reservation
@@ -742,7 +793,7 @@ for timeStage in range(0, timeLength) :
                 for contractLength in vmContractLengthList :
                     paymentVmDecVar_uti = contractVmDecVar_uti[str(contractLength)]
                     for payment in ['NoUpfront', 'PartialUpfront', 'AllUpfront'] :
-                        vmUtilizationDecVar = paymentVmDecVar_uti[str(payment)]
+                        vmUtilization = paymentVmDecVar_uti[str(payment)]
                         
                         userEffectiveVmResDecVarDict = effectiveVmResDecVarDict[str(provider)]
                         vmTypeEffectiveVmResDecVarDict = userEffectiveVmResDecVarDict[str(userIndex)]
@@ -750,7 +801,7 @@ for timeStage in range(0, timeLength) :
                         paymentEffectiveVmResDecVarDict = contractEffectiveVmResDecVarDict[str(contractLength)]
                         effectiveVmResDecVarList = paymentEffectiveVmResDecVarDict[str(payment)]
                         
-                        model.addConstr(vmUtilizationDecVar, GRB.LESS_EQUAL, quicksum(effectiveVmResDecVarList[timeStage]))
+                        model.addConstr(vmUtilization, GRB.LESS_EQUAL, quicksum(effectiveVmResDecVarList[timeStage]))
 
 print('Constraint 14 complete')
 

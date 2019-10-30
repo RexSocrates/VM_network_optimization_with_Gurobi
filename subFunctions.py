@@ -48,7 +48,7 @@ def demandGenerator(timeLength, userList, vmTypes) :
 
 # sort the VM data accroding to the providers, VM types, contracts, payment options
 def sortVM(instanceData, providerList, vmTypeList) :
-    contractList = [1 * 24 * 365, 3 * 24 * 365]
+    contractList = [10, 30]
     paymentOptionList = ['NoUpfront', 'PartialUpfront', 'AllUpfront']
     
     # store the sorted VM data
@@ -115,7 +115,7 @@ def sortRouter(routerData) :
 def sortEnergyPrice(energyPriceDict, timeLength) :
     sortedEnergyPrice = []
     for timeStage in range(0, timeLength) :
-        sortedEnergyPrice = dict()
+        sortedEnergyPrice.append(dict())
     
     for area in energyPriceDict :
         energyPriceObj = energyPriceDict[area]

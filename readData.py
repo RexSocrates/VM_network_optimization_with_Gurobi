@@ -1,6 +1,7 @@
 from VMClass import *
 from EnergyPriceClass import *
 from CloudProviderClass import *
+from RouterClass import *
 import pandas as pd
 import numpy as np
 import csv
@@ -28,7 +29,7 @@ def getVirtualResource() :
         area = row[0]
         provider = row[1]
         instanceType = row[2]
-        contract = int(row[3]) * 24 * 365
+        contract = int(row[3])
         paymentOption = row[4]
         reservationFee = float(row[5])
         utilizationFee = float(row[6])
@@ -57,7 +58,7 @@ def getRouterBandwidthPrice(networkTopology) :
         
         routerData = []
         
-        for row in row[1:] :
+        for row in rowData[1:] :
             routerIndex = int(row[0])
             routerArea = row[1]
             contractLength = int(row[2])
@@ -136,7 +137,7 @@ def getNetworkTopology() :
         networkDict['user'] = []
         networkDict['provider'] = dict()
         networkDict['router'] = []
-        networkDict['edges'] = [rowData[0][1:]]
+        networkDict['edges'] = rowData[0][1:]
         
         for row in rowData[1:] :
             node = row[0]
