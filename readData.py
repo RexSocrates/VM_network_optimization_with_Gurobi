@@ -67,11 +67,12 @@ def getRouterBandwidthPrice(networkTopology) :
             utilizationFee = float(row[5])
             onDemandFee = float(row[6])
             
-            edges = routerEdgesList[routerIndex]
             
             if routerIndex >= len(routerEdgesList) :
                 break
             else :
+                # get the edges that directly connect to the router
+                edges = routerEdgesList[routerIndex]
                 newRouterData = RouterClass(routerIndex, routerArea, contractLength, paymentOption, initialResFee, utilizationFee, onDemandFee, edges)
                 routerData.append(newRouterData)
         

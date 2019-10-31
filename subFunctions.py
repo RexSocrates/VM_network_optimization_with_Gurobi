@@ -47,10 +47,7 @@ def demandGenerator(timeLength, userList, vmTypes) :
     return timeList
 
 # sort the VM data accroding to the providers, VM types, contracts, payment options
-def sortVM(instanceData, providerList, vmTypeList) :
-    contractList = [10, 30]
-    paymentOptionList = ['NoUpfront', 'PartialUpfront', 'AllUpfront']
-    
+def sortVM(instanceData, providerList, vmTypeList, contractLengthList, paymentList) :
     # store the sorted VM data
     newVmList = dict()
     
@@ -58,9 +55,9 @@ def sortVM(instanceData, providerList, vmTypeList) :
         vmTypesOfProvider = dict()
         for vmType in vmTypeList :
             contractOfVmTypes = dict()
-            for contractLength in contractList :
+            for contractLength in contractLengthList :
                 paymentOptionOfContract = dict()
-                for payment in paymentOptionList :
+                for payment in paymentList :
                     # find the instance data with specific configuration
                     for instance in instanceData :
                         instanceProvider = instance.provider
@@ -181,4 +178,33 @@ def getOutboundBandwidthRequirement(instanceData) :
             outboundBandReqDict[str(instanceType)] = networkReq
     return outboundBandReqDict
 
-
+def getVmDataConfiguration(instanceData) :
+    providerList = []
+    vmTypeList = []
+    vmContractLengthList = []
+    vmPaymentList = []
+    
+    for instance in instanceData :
+        provider = instance.provider
+        vmType = instance.instanceType
+        contractLength = instance.contractLength
+        payment = instance.paymentOption
+        
+        if provider not in providerList :
+            providerList.append(provider)
+        
+        if vmType not in vmTypeList :
+            vmTypeList.append(vmType)
+        
+        if contractLength not in vmContractLengthList :
+            vmContractLengthList.append(int(contractLength))
+        
+        if payment not in vmPaymentList :
+            vmPaymentList.append(payment)
+    configDict = dict()
+    configDict['providerList'] = providerList
+    configDict['vmTypeList'] = vmTypeList
+    configDict['vmContractLengthList'] = vmContractLengthList
+    configDict['vmPaymentList'] = vmPaymentList
+    
+    return configDict
