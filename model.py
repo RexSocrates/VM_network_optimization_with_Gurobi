@@ -96,13 +96,16 @@ for timeStage in range(0, timeLength) :
                         paymentOptionsList = vmPaymentList
                         paymentOption = paymentOptionsList[paymentOptionIndex]
                         
+                        resDecVarName = 'vmRes_t_' + str(timeStage) + 'p_' + str(provider) + 'u_' + str(userIndex) + 'i_' + str(vmType) + 'k_' + str(contractLength) + 'j_' + str(paymentOption)
+                        utiDecVarName = 'vmUti_t_' + str(timeStage) + 'p_' + str(provider) + 'u_' + str(userIndex) + 'i_' + str(vmType) + 'k_' + str(contractLength) + 'j_' + str(paymentOption)
+                        
                         # create a decision variable that represent the number of instance whose instance type is i
                         # reserved from provider p
                         # at time stage t
                         # by user u
                         # adopted contract k and payment option j
-                        reservationVar = model.addVar(lb=0.0, ub=GRB.INFINITY, vtype=GRB.INTEGER)
-                        utilizationVar = model.addVar(lb=0.0, vtype=GRB.INTEGER)
+                        reservationVar = model.addVar(lb=0.0, ub=GRB.INFINITY, vtype=GRB.INTEGER, name=resDecVarName)
+                        utilizationVar = model.addVar(lb=0.0, vtype=GRB.INTEGER, name=utiDecVarName)
                         
                         paymentOptionDecVar_res[paymentOption] = reservationVar
                         paymentOptionDecVar_uti[paymentOption] = utilizationVar
@@ -151,7 +154,8 @@ for timeStage in range(0, timeLength) :
                     contractDecVar_res[str(contractLength)] = paymentOptionDecVar_res
                     contractDecVar_uti[str(contractLength)] = paymentOptionDecVar_uti
                 
-                onDemandVmVar = model.addVar(lb=0.0, vtype=GRB.INTEGER)
+                onDemandDecVarName = 'vmOnDemand_t_' + str(timeStage) + 'p_' + str(provider) + 'u_' + str(userIndex) + 'i_' + str(vmType)
+                onDemandVmVar = model.addVar(lb=0.0, vtype=GRB.INTEGER, name=onDemandDecVarName)
                 
                 vmDecVar_res[vmType] = contractDecVar_res
                 vmDecVar_uti[vmType] = contractDecVar_uti
@@ -234,8 +238,11 @@ for timeStage in range(0, timeLength) :
                     bandPaymentOptionList = ['No upfront', 'Partial upfront', 'All upfront']
                     bandPaymentOption = bandPaymentOptionList[bandPaymentOptionIndex]
                     
-                    bandReservation = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS)
-                    bandUtilization = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS)
+                    bandResDecVarName = 'bandRes_t_' + str(timeStage) + 'u_' + str(userIndex) + 'r_' + str(routerIndex) + 'l_' + str(bandResContractLength) + 'm_' + str(bandPaymentOption)
+                    bandUtiDecVarName = 'bandUti_t_' + str(timeStage) + 'u_' + str(userIndex) + 'r_' + str(routerIndex) + 'l_' + str(bandResContractLength) + 'm_' + str(bandPaymentOption)
+                    
+                    bandReservation = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS, name=bandResDecVarName)
+                    bandUtilization = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS, name=bandUtiDecVarName)
                     
                     bandPaymentOptionDecVar_res[bandPaymentOption] = bandReservation
                     bandPaymentOptionDecVar_uti[bandPaymentOption] = bandUtilization
@@ -270,7 +277,8 @@ for timeStage in range(0, timeLength) :
                 bandContractDecVar_res[str(bandResContractLength)] = bandPaymentOptionDecVar_res
                 bandContractDecVar_uti[str(bandResContractLength)] = bandPaymentOptionDecVar_uti
             
-            bandOnDemand = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS)
+            bandOnDemandDecVarName = 'bandOnDemand_t_' + str(timeStage) + 'u_' + str(userIndex) + 'r_' + str(routerIndex)
+            bandOnDemand = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS, name=bandOnDemandDecVarName)
             
             bandRouterDecVar_res[str(routerIndex)] = bandContractDecVar_res
             bandRouterDecVar_uti[str(routerIndex)] = bandContractDecVar_uti
@@ -364,11 +372,12 @@ for timeStage in range(0, timeLength) :
                     if str(vmType) not in vmChangeStateEnergyDict :
                         vmChangeStateEnergyDict[str(vmType)] = changeStateEnergyConsumption
                     
+                    timeProviderUserVmTypeStr = 't_' + str(timeStage) + 'p_' + str(provider) + 'u_' + str(userIndex) + 'i_' + str(vmType)
                     
-                    energyConsumptionOfActiveVm = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS)
-                    numOfActiveVms = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS)
-                    numOfTurnedOnVm = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS)
-                    numOfTurnedOffVm = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS)
+                    energyConsumptionOfActiveVm = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS, name='energyConsumption_' + timeProviderUserVmTypeStr)
+                    numOfActiveVms = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS, name='numOfActiveVms_' + timeProviderUserVmTypeStr)
+                    numOfTurnedOnVm = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS, name='numOfTurnedOnVms_' + timeProviderUserVmTypeStr)
+                    numOfTurnedOffVm = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS, name='numOfTurnedOffVms_' + timeProviderUserVmTypeStr)
                     
                     # store the decision variables in the dictionaries
                     activeVmEnergyConsumptionDecVarDict[str(vmType)] = energyConsumptionOfActiveVm
@@ -381,12 +390,14 @@ for timeStage in range(0, timeLength) :
                 userTurnedOnVmDecVarDict[str(userIndex)] = turnedOnVmDecVarDict
                 userTurnedOffVmDecVarDict[str(userIndex)] = turnedOffVmDecVarDict
             
-            providerGreenEnergyUsage = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS)
-            solarToDc = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS)
-            solarToBattery = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS)
-            batteryToDc = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS)
-            battegyEnergyLevel_beg = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS)
-            batteryEnergyLevel_end = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS)
+            timeProviderStr = 't_' + str(timeStage) + 'p_' + str(provider)
+            
+            providerGreenEnergyUsage = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS, name='greenEnergyUsage_' + timeProviderStr)
+            solarToDc = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS, name='solarToDc_' + timeProviderStr)
+            solarToBattery = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS, name='solarToBattery_' + timeProviderStr)
+            batteryToDc = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS, name='batteryToDc_' + timeProviderStr)
+            battegyEnergyLevel_beg = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS, name='batteryEnergyLevel_beg_' + timeProviderStr)
+            batteryEnergyLevel_end = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS, name='batteryEnergyLevel_end_' + timeProviderStr)
             
             providerActiveVmEnergyConsumptionDecVarDict[str(provider)] = userActiveVmEnergyConsumptionDecVarDict
             providerNumOfActiveVmsDecVarDict[str(provider)] = userNumOfActiveVmsDecVarDict
@@ -447,11 +458,13 @@ for timeStage in range(0, timeLength) :
         for router in areaRouterList :
             routerIndex = router.routerIndex
             
-            routerEnergyConsumption = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS)
+            timeRouterStr = 't_' + str(timeStage) + 'r_' + str(routerIndex)
             
-            routerStatus = model.addVar(vtype=GRB.BINARY)
-            routerOn = model.addVar(vtype=GRB.CONTINUOUS)
-            routerOff = model.addVar(vtype=GRB.CONTINUOUS)
+            routerEnergyConsumption = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS, name='routerEnergyConsumption_' + timeRouterStr)
+            
+            routerStatus = model.addVar(vtype=GRB.BINARY, name='RS_' + timeRouterStr)
+            routerOn = model.addVar(vtype=GRB.CONTINUOUS, name='RO_' + timeRouterStr)
+            routerOff = model.addVar(vtype=GRB.CONTINUOUS, name='RF_' + timeRouterStr)
             
             routerBandwidthUsage = model.addVar(vtype=GRB.CONTINUOUS)
             
@@ -483,7 +496,8 @@ for timeStage in range(0, timeLength) :
             flowType = flowTypeList[flowTypeIndex]
             userFlowDecVarDict = dict()
             for userIndex in range(0, numOfUsers) :
-                flow = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS)
+                timeEdgeTypeUserStr = 't_' + str(timeStage) + 'e_' + str(edgeIndex) + 'type_' + flowType + 'u_' + str(userIndex)
+                flow = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS, name='flow_' + timeEdgeTypeUserStr)
                 userFlowDecVarDict[str(userIndex)] = flow
             flowTypeDecVarDict[str(flowType)] = userFlowDecVarDict
         edgeFlowDecVarDict[str(edgeIndex)] = flowTypeDecVarDict
