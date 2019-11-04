@@ -19,7 +19,7 @@ networkTopology = getNetworkTopology()
 
 model = Model('VM_network_and_energy_optimization_model')
 
-timeLength = 10
+timeLength = 6
 numOfUsers = len(networkTopology['user'])
 # vmContractLengthList = [10, 30]
 vmContractLengthList = vmDataConfiguration['vmContractLengthList']
@@ -490,17 +490,12 @@ edgeFlowDecVarList = []
 for timeStage in range(0, timeLength) :
     edgeFlowDecVarDict = dict()
     for edgeIndex in range(0, len(edgeList)) :
-        flowTypeDecVarDict = dict()
-        for flowTypeIndex in range(2) :
-            flowTypeList = ['in', 'out']
-            flowType = flowTypeList[flowTypeIndex]
-            userFlowDecVarDict = dict()
-            for userIndex in range(0, numOfUsers) :
-                timeEdgeTypeUserStr = 't_' + str(timeStage) + 'e_' + str(edgeIndex) + 'type_' + flowType + 'u_' + str(userIndex)
-                flow = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS, name='flow_' + timeEdgeTypeUserStr)
-                userFlowDecVarDict[str(userIndex)] = flow
-            flowTypeDecVarDict[str(flowType)] = userFlowDecVarDict
-        edgeFlowDecVarDict[str(edgeIndex)] = flowTypeDecVarDict
+        userFlowDecVarDict = dict()
+        for userIndex in range(0, numOfUsers) :
+            timeEdgeUserStr = 't_' + str(timeStage) + 'e_' + str(edgeIndex) + 'u_' + str(userIndex)
+            flow = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS, name='flow_' + timeEdgeUserStr)
+            userFlowDecVarDict[str(userIndex)] = flow
+        edgeFlowDecVarDict[str(edgeIndex)] = userFlowDecVarDict
     edgeFlowDecVarList.append(edgeFlowDecVarDict)
 
 print('Edge flow decision variable complete')
@@ -527,17 +522,17 @@ print('Total cost objective function complete')
 
 # add constraints
 
-# constraint 5 : the total energy consumption of active VMs the product of the energy consumption of each VM type and the number of active VMs
+# constraint 6 : the total energy consumption of active VMs the product of the energy consumption of each VM type and the number of active VMs
 for timeStage in range(0, timeLength) :
-    # constraint 5
+    # constraint 6
     providerActiveVmEnergyConsumptionDecVarDict = activeVmEnergyConsumptionDecVarList[timeStage]
     providerNumOfActiveVmsDecVarDict = numOfActiveVmsDecVarList[timeStage]
     
-    # constraint 6, 7, 8
+    # constraint 7, 8, 9
     providerDecVar_uti = vmUtilizationDecVar[timeStage]
     providerDecVar_onDemand = vmOnDemandDecVar[timeStage]
     
-    # constraint 7, 8
+    # constraint 8, 9
     providerTurnedOnVmDecVarDict = turnedOnVmVarList[timeStage]
     providerTurnedOffVmDecVarDict = turnedOffVmVarList[timeStage]
     for providerIndex in range(0, len(providerList)) :
@@ -572,23 +567,25 @@ for timeStage in range(0, timeLength) :
                 
                 energyConsumptionOfVmType = vmData.energyConsumption
                 
-                # constraint 5
-                model.addConstr(energyConsumptionOfActiveVms, GRB.EQUAL, numOfActiveVms * energyConsumptionOfVmType)
+                tpuiStr = 't_' + str(timeStage) + 'p_' + str(provider) + 'u_' + str(userIndex) + 'i_' + str(vmType)
                 
                 # constraint 6
+                model.addConstr(energyConsumptionOfActiveVms, GRB.EQUAL, numOfActiveVms * energyConsumptionOfVmType, name='c6:' + tpuiStr)
+                
+                # constraint 7
                 vmUtilizationAndOnDemandDecVarList = [vmDecVar_uti[str(vmType)][str(contract)][payment] for contract in vmContractLengthList for payment in vmPaymentList]
                 vmUtilizationAndOnDemandDecVarList.append(vmDecVar_onDemand[str(vmType)])
                 
-                model.addConstr(numOfActiveVms, GRB.EQUAL, quicksum(vmUtilizationAndOnDemandDecVarList))
+                model.addConstr(numOfActiveVms, GRB.EQUAL, quicksum(vmUtilizationAndOnDemandDecVarList), name='c7:' + tpuiStr)
                 
-                # constraint 7 and constraint 8
+                # constraint 8 and constraint 9
                 numOfTurnedOnVm = numOfTurnedOnVmTypeDict[str(vmType)]
                 numOfTurnedOffVm = numOfTurnedOffVmTypeDict[str(vmType)]
                 
                 if timeStage == 0 :
                     previousTimeStageVmUtilizationAndOnDemandDecVarList = []
-                    model.addConstr(numOfTurnedOnVm, GRB.GREATER_EQUAL, quicksum(vmUtilizationAndOnDemandDecVarList))
-                    model.addConstr(numOfTurnedOffVm, GRB.GREATER_EQUAL, -1 * quicksum(vmUtilizationAndOnDemandDecVarList))
+                    model.addConstr(numOfTurnedOnVm, GRB.GREATER_EQUAL, quicksum(vmUtilizationAndOnDemandDecVarList), name='c8:' + tpuiStr)
+                    model.addConstr(numOfTurnedOffVm, GRB.GREATER_EQUAL, -1 * quicksum(vmUtilizationAndOnDemandDecVarList), name='c9:' + tpuiStr)
                 else :
                     previousTimeStageProviderDecVar_uti = vmUtilizationDecVar[timeStage-1]
                     previousTimeStageProviderDecVar_onDemand = vmOnDemandDecVar[timeStage - 1]
@@ -605,13 +602,13 @@ for timeStage in range(0, timeLength) :
                     previousTimeStageVmUtilizationAndOnDemandDecVarList = [previousTimeStageUtilizedVmDecVar[str(contract)][str(payment)] for contract in vmContractLengthList for payment in vmPaymentList]
                     previousTimeStageVmUtilizationAndOnDemandDecVarList.append(previousTimeStageOnDemandDecVar)
                     
-                    model.addConstr(numOfTurnedOnVm, GRB.GREATER_EQUAL, quicksum(vmUtilizationAndOnDemandDecVarList) - quicksum(previousTimeStageVmUtilizationAndOnDemandDecVarList))
-                    model.addConstr(numOfTurnedOffVm, GRB.GREATER_EQUAL, quicksum(previousTimeStageVmUtilizationAndOnDemandDecVarList) - quicksum(vmUtilizationAndOnDemandDecVarList))
+                    model.addConstr(numOfTurnedOnVm, GRB.GREATER_EQUAL, quicksum(vmUtilizationAndOnDemandDecVarList) - quicksum(previousTimeStageVmUtilizationAndOnDemandDecVarList), name='c8:' + tpuiStr)
+                    model.addConstr(numOfTurnedOffVm, GRB.GREATER_EQUAL, quicksum(previousTimeStageVmUtilizationAndOnDemandDecVarList) - quicksum(vmUtilizationAndOnDemandDecVarList), name='c9:' + tpuiStr)
                     
-print('Constraint 5, 6, 7, 8 complete')
+print('Constraint 6, 7, 8, 9 complete')
                 
 
-# constraint 6 : the number of active VMs is the sum of utlization and on-demand VMs
+# constraint 7 : the number of active VMs is the sum of utlization and on-demand VMs
 '''
 for timeStage in range(0, timeLength) :
     providerNumOfActiveVmsDecVarDict = numOfActiveVmsDecVarList[timeStage]
@@ -637,7 +634,7 @@ for timeStage in range(0, timeLength) :
                 model.addConstr(numOfActiveVms, GRB.EQUAL, quicksum(contractAndPaymentDecVarList))
 '''
 
-# constraint 7 and constraint 8 : VM_On constraint and VM_Off constraint
+# constraint 8 and constraint 9 : VM_On constraint and VM_Off constraint
 '''
 for timeStage in range(0, timeLength) :
     providerTurnedOnVmDecVarDict = turnedOnVmVarList[timeStage]
@@ -691,19 +688,19 @@ for timeStage in range(0, timeLength) :
                     model.addConstr(numOfTurnedOffVm, GRB.GREATER_EQUAL, quicksum(previousTimeStageVmUtilizationAndOnDemandDecVarList) - quicksum(vmUtilizationAndOnDemandDecVarList))
 '''
 
-# constraint 10, 11 : Router_On and Router_Off constraints
+# constraint 11, 12 : Router_On and Router_Off constraints
 for timeStage in range(0, timeLength) :
-    # constraint 10, 11, 12
+    # constraint 11, 12, 13
     routerStatusDecVarDict = routerStatusDecVarList[timeStage]
-    # constraint 10, 11
+    # constraint 11, 12
     routerOnDecVarDict = routerOnDecVarList[timeStage]
     routerOffDecVarDict = routerOffDecVarList[timeStage]
     
-    # constraint 12
+    # constraint 13
     routerEnergyConsumptionDecVarDict = routerEnergyConsumptionDecVarList[timeStage]
     routerBandwidthUsageDecVarDict = routerBandwidthUsageDecVarList[timeStage]
     
-    # constraint 13
+    # constraint 14
     edgeFlowDecVarDict = edgeFlowDecVarList[timeStage]
     for router in routerData :
         routerIndex = router.routerIndex
@@ -715,45 +712,49 @@ for timeStage in range(0, timeLength) :
         routerEnergyConsumption = routerEnergyConsumptionDecVarDict[str(routerIndex)]
         routerBandwidthUsage = routerBandwidthUsageDecVarDict[str(routerIndex)]
         
-        # constraint 10, 11
+        trStr = 't_' + str(timeStage) + 'r_' + str(routerIndex)
+        
+        # constraint 11, 12
         if timeStage == 0 :
-            model.addConstr(routerOn, GRB.GREATER_EQUAL, routerStatus)
-            model.addConstr(routerOff, GRB.GREATER_EQUAL, -1 * routerStatus)
+            model.addConstr(routerOn, GRB.GREATER_EQUAL, routerStatus, name='c11:' + trStr)
+            model.addConstr(routerOff, GRB.GREATER_EQUAL, -1 * routerStatus, name='c12:' + trStr)
         else :
             previousTimeStageRouterStatusDecVarDict = routerStatusDecVarList[timeStage - 1]
             previousTimeStageRouterStatus = previousTimeStageRouterStatusDecVarDict[str(routerIndex)]
             
-            model.addConstr(routerOn, GRB.GREATER_EQUAL, routerStatus - previousTimeStageRouterStatus)
-            model.addConstr(routerOff, GRB.GREATER_EQUAL, previousTimeStageRouterStatus - routerStatus)
-        
-        # constraint 12
-        model.addConstr(routerEnergyConsumption, GRB.EQUAL, routerStatus * idleRouterEnergyConsumption + routerBandwidthUsage / (2 * routerCapacity) * (fullyLoadedRouterEnergyConsumption - idleRouterEnergyConsumption))
+            model.addConstr(routerOn, GRB.GREATER_EQUAL, routerStatus - previousTimeStageRouterStatus, name='c11:' + trStr)
+            model.addConstr(routerOff, GRB.GREATER_EQUAL, previousTimeStageRouterStatus - routerStatus, name='c12:' + trStr)
         
         # constraint 13
-        routerDirectlyConnectedEdges = router.edges
+        model.addConstr(routerEnergyConsumption, GRB.EQUAL, routerStatus * idleRouterEnergyConsumption + routerBandwidthUsage / (2 * routerCapacity) * (fullyLoadedRouterEnergyConsumption - idleRouterEnergyConsumption), name='c13:' + trStr)
+        
+        # constraint 14
+        routerDirectlyConnectedInFlowEdges = router.inFlowEdges
+        routerDirectlyConnectedOutFlowEdges = router.outFlowEdges
         
         edgeInFlow = []
         edgeOutFlow = []
         
-        for edgeIndex in routerDirectlyConnectedEdges :
-            flowTypeDecVarDict = edgeFlowDecVarDict[str(edgeIndex)]
-            
-            flowInDecVarDict = flowTypeDecVarDict['in']
-            flowOutDecVarDict = flowTypeDecVarDict['out']
+        for edgeIndex in routerDirectlyConnectedInFlowEdges :
+            userFlowDecVarDict = edgeFlowDecVarDict[str(edgeIndex)]
             
             for userIndex in range(0, numOfUsers) :
-                userFlowIn = flowInDecVarDict[str(userIndex)]
-                userFlowOut = flowOutDecVarDict[str(userIndex)]
-                
-                edgeInFlow.append(userFlowIn)
-                edgeOutFlow.append(userFlowOut)
+                userInFlow = userFlowDecVarDict[str(userIndex)]
+                edgeInFlow.append(userInFlow)
+            
+        for edgeIndex in routerDirectlyConnectedOutFlowEdges :
+            userFlowDecVarDict = edgeFlowDecVarDict[str(edgeIndex)]
+            
+            for userIndex in range(0, numOfUsers) :
+                userOutFlow = userFlowDecVarDict[str(userIndex)]
+                edgeOutFlow.append(userOutFlow)
         
         
-        model.addConstr(routerBandwidthUsage, GRB.EQUAL, quicksum(edgeInFlow) + quicksum(edgeOutFlow))
+        model.addConstr(routerBandwidthUsage, GRB.EQUAL, quicksum(edgeInFlow) + quicksum(edgeOutFlow), name='c14:' + trStr)
         
-print('Constraint 10, 11, 12, 13 complete')
+print('Constraint 11, 12, 13, 14 complete')
 
-# constraint 12 : the energy consumption of a router
+# constraint 13 : the energy consumption of a router
 '''
 for timeStage in range(0, timeLength) :
     routerEnergyConsumptionDecVarDict = routerEnergyConsumptionDecVarList[timeStage]
@@ -768,7 +769,7 @@ for timeStage in range(0, timeLength) :
         model.addConstr(routerEnergyConsumption, GRB.EQUAL, routerStatus * idleRouterEnergyConsumption + routerBandwidthUsage / (2 * routerCapacity) * (fullyLoadedRouterEnergyConsumption - idleRouterEnergyConsumption))
 '''
     
-# constraint 13 : the bandwidth usage constraint
+# constraint 14 : the bandwidth usage constraint
 '''
 for timeStage in range(0, timeLength) :
     edgeFlowDecVarDict = edgeFlowDecVarList[timeStage]
@@ -797,7 +798,7 @@ for timeStage in range(0, timeLength) :
         model.addConstr(routerBandwidthUsage, GRB.EQUAL, quicksum(edgeInFlow) + quicksum(edgeOutFlow))
 '''
 
-# constraint 14 : effective VM reservation
+# constraint 15 : effective VM reservation
 for timeStage in range(0, timeLength) :
     providerVmDecVar_uti = vmUtilizationDecVar[timeStage]
     for providerIndex in range(0, len(providerList)) :
@@ -819,11 +820,13 @@ for timeStage in range(0, timeLength) :
                         paymentEffectiveVmResDecVarDict = contractEffectiveVmResDecVarDict[str(contractLength)]
                         effectiveVmResDecVarList = paymentEffectiveVmResDecVarDict[str(payment)]
                         
-                        model.addConstr(vmUtilization, GRB.LESS_EQUAL, quicksum(effectiveVmResDecVarList[timeStage]))
+                        tupikjStr = 't_' + str(timeStage) + 'p_' + str(provider) + 'u_' + str(userIndex) + 'i_' + str(vmType) + 'k_' + str(contractLength) + 'j_' + str(payment)
+                        
+                        model.addConstr(vmUtilization, GRB.LESS_EQUAL, quicksum(effectiveVmResDecVarList[timeStage]), name='c15:' + tupikjStr)
 
-print('Constraint 14 complete')
+print('Constraint 15 complete')
 
-# constraint 15 : demand constraint
+# constraint 16 : demand constraint
 for timeStage in range(0, timeLength) :
     userVmDemandDict = vmDemandList[timeStage]
     for userIndex in range(0, numOfUsers) :
@@ -857,11 +860,12 @@ for timeStage in range(0, timeLength) :
                 onDemandDecVar = vmTypeDecVarDict_onDemand[str(vmType)]
                 utlizationAndOnDemandVmDecVarList.append(onDemandDecVar)
             
-            model.addConstr(quicksum(utlizationAndOnDemandVmDecVarList), GRB.GREATER_EQUAL, vmDemand)
+            tuiStr = 't_' + str(timeStage) + 'u_' + str(userIndex) + 'i_' + str(vmType)
+            model.addConstr(quicksum(utlizationAndOnDemandVmDecVarList), GRB.GREATER_EQUAL, vmDemand, name='c16:' + tuiStr)
 
-print('Constraint 15 complete')
+print('Constraint 16 complete')
             
-# constraint 16, 17, 18 : cloud provider resource upper bound limit
+# constraint 17, 18, 19 : cloud provider resource upper bound limit
 cloudProvidersDict = getProviderCapacity(networkTopology['provider'])
 instanceReqDict = getInstanceReqDict(instanceData)
 for timeStage in range(0, timeLength) :
@@ -912,18 +916,20 @@ for timeStage in range(0, timeLength) :
             vmInternalBandReqList.append(vmInternalBandReq)
             vmTypeUtilizedAndOnDemandDecVarList.append(currentVmTypeUtilizedAndOnDemandDecVarList)
         
-        # constraint 16 : host constraint
-        model.addConstr(quicksum([vmCoreReqList[vmIndex] * quicksum(vmTypeUtilizedAndOnDemandDecVarList[vmIndex]) for vmIndex in range(0, len(vmCoreReqList))]), GRB.LESS_EQUAL, coreLimit)
+        tpStr = 't_' + str(timeStage) + 'p_' + str(provider)
         
-        # constraint 17 : storage constraint
-        model.addConstr(quicksum([vmStorageReqList[vmIndex] * quicksum(vmTypeUtilizedAndOnDemandDecVarList[vmIndex]) for vmIndex in range(0, len(vmStorageReqList))]), GRB.LESS_EQUAL, storageLimit)
+        # constraint 17 : host constraint
+        model.addConstr(quicksum([vmCoreReqList[vmIndex] * quicksum(vmTypeUtilizedAndOnDemandDecVarList[vmIndex]) for vmIndex in range(0, len(vmCoreReqList))]), GRB.LESS_EQUAL, coreLimit, name='c17:' + tpStr)
         
-        # constraint 18 : internal bandwidth constraint
-        model.addConstr(quicksum([vmInternalBandReqList[vmIndex] * quicksum(vmTypeUtilizedAndOnDemandDecVarList[vmIndex]) for vmIndex in range(0, len(vmInternalBandReqList))]), GRB.LESS_EQUAL, internalBandLimit)
+        # constraint 18 : storage constraint
+        model.addConstr(quicksum([vmStorageReqList[vmIndex] * quicksum(vmTypeUtilizedAndOnDemandDecVarList[vmIndex]) for vmIndex in range(0, len(vmStorageReqList))]), GRB.LESS_EQUAL, storageLimit, name='c18:' + tpStr)
+        
+        # constraint 19 : internal bandwidth constraint
+        model.addConstr(quicksum([vmInternalBandReqList[vmIndex] * quicksum(vmTypeUtilizedAndOnDemandDecVarList[vmIndex]) for vmIndex in range(0, len(vmInternalBandReqList))]), GRB.LESS_EQUAL, internalBandLimit, name='c19:' + tpStr)
 
-print('Constraint 16, 17, 18 complete')
+print('Constraint 17, 18, 19 complete')
 
-# constraint 19 : VM decision variables integer constraint
+# constraint 20 : VM decision variables integer constraint
 for timeStage in range(0, timeLength) :
     for providerIndex in range(0, len(providerList)) :
         provider = providerList[providerIndex]
@@ -931,25 +937,35 @@ for timeStage in range(0, timeLength) :
             for vmTypeIndex in range(0, len(vmTypeList)) :
                 for contractLength in vmContractLengthList :
                     for payment in vmPaymentList :
+                        providerVmDecVarDict_res = vmResDecVar[timeStage]
                         providerVmDecVarDict_uti = vmUtilizationDecVar[timeStage]
+                        userVmDecVarDict_res = providerVmDecVarDict_res[str(provider)]
                         userVmDecVarDict_uti = providerVmDecVarDict_uti[str(provider)]
+                        vmTypeDecVarDict_res = userVmDecVarDict_res[str(userIndex)]
                         vmTypeDecVarDict_uti = userVmDecVarDict_uti[str(userIndex)]
+                        contractDecVarDict_res = vmTypeDecVarDict_res[str(vmType)]
                         contractDecVarDict_uti = vmTypeDecVarDict_uti[str(vmType)]
+                        paymentDecVarDict_res = contractDecVarDict_res[str(contractLength)]
                         paymentDecVarDict_uti = contractDecVarDict_uti[str(contractLength)]
-                        utilizationDecVar = paymentDecVarDict_uti[payment]
+                        reservationDecVar = paymentDecVarDict_res[str(payment)]
+                        utilizationDecVar = paymentDecVarDict_uti[str(payment)]
                         
-                        model.addConstr(utilizationDecVar, GRB.GREATER_EQUAL, 0)
+                        tupikjStr = 't_' + str(timeStage) + 'p_' + str(provider) + 'u_' + str(userIndex) + 'i_' + str(vmType) + 'k_' + str(contractLength) + 'j_' + str(payment)
+                        
+                        model.addConstr(reservationDecVar, GRB.GREATER_EQUAL, 0, name='c20_res:' + tupikjStr)
+                        model.addConstr(utilizationDecVar, GRB.GREATER_EQUAL, 0, name='c20_uti:' + tupikjStr)
                         
                 providerVmDecVarDict_onDemand = vmOnDemandDecVar[timeStage]
                 userVmDecVarDict_onDemand = providerVmDecVarDict_onDemand[str(provider)]
                 vmTypeDecVarDict_onDemand = userVmDecVarDict_onDemand[str(userIndex)]
                 onDemandDecVar = vmTypeDecVarDict_onDemand[str(vmType)]
                 
-                model.addConstr(onDemandDecVar, GRB.GREATER_EQUAL, 0)
+                tupiStr = 't_' + str(timeStage) + 'p_' + str(provider) + 'u_' + str(userIndex) + 'i_' + str(vmType)
+                model.addConstr(onDemandDecVar, GRB.GREATER_EQUAL, 0, name='c20_on:' + tupiStr)
 
-print('Constraint 19 complete')
+print('Constraint 20 complete')
                         
-# constraint 20 : effective bandiwdth
+# constraint 21 : effective bandiwdth
 for userIndex in range(0, numOfUsers) :
     for router in routerData :
         routerIndex = router.routerIndex
@@ -971,11 +987,13 @@ for userIndex in range(0, numOfUsers) :
                     paymentBandUtilization = contractBandUtilization[str(bandContractLength)]
                     bandUtilization = paymentBandUtilization[str(bandPayment)]
                     
-                    model.addConstr(bandUtilization, GRB.LESS_EQUAL, quicksum(effectiveBandDecVarAtCurrentTimeStage))
+                    turlmStr = 't_' + str(timeStage) + 'r_' + str(routerIndex) + 'u_' + str(userIndex) + 'l_' + str(bandContractLength) + 'm_' + str(bandPayment)
+                    
+                    model.addConstr(bandUtilization, GRB.LESS_EQUAL, quicksum(effectiveBandDecVarAtCurrentTimeStage), name='c21:' + turlmStr)
 
-print('Constraint 20 complete')
+print('Constraint 21 complete')
 
-# constraint 21 : router's bandwidth limit
+# constraint 22 : router's bandwidth limit
 for timeStage in range(0, timeLength) :
     for router in routerData :
         routerIndex = router.routerIndex
@@ -1003,22 +1021,26 @@ for timeStage in range(0, timeLength) :
             routerBandOnDemand = userBandOnDemand[str(userIndex)]
             bandOnDemand = routerBandOnDemand[str(routerIndex)]
             bandUtilizationAndOnDemandDecVarList.append(bandOnDemand)
-            
-        model.addConstr(quicksum(bandUtilizationAndOnDemandDecVarList), GRB.LESS_EQUAL, routerStatus * 1.0)
+        
+        trStr = 't_' + str(timeStage) + 'r_' + str(routerIndex)
+        
+        model.addConstr(quicksum(bandUtilizationAndOnDemandDecVarList), GRB.LESS_EQUAL, routerStatus * 1.0, name='c22:' + trStr)
 
-print('Constraint 21 complete')
+print('Constraint 22 complete')
 
-# constraint 22 : router status initialization
+# constraint 23 : router status initialization
 for router in routerData :
     routerIndex = router.routerIndex
     routerStatusDecVarDict = routerStatusDecVarList[0]
     routerStatus = routerStatusDecVarDict[str(routerIndex)]
     
-    model.addConstr(routerStatus, GRB.EQUAL, 0)
+    rStr = 't_0_r' + str(routerIndex)
+    
+    model.addConstr(routerStatus, GRB.EQUAL, 0, name='c23:' + rStr)
 
-print('Constraint 22 complete')
+print('Constraint 23 complete')
 
-# constraint 23 : the non-negative constraint for bandwidth decision variables
+# constraint 24 : the non-negative constraint for bandwidth decision variables
 for timeStage in range(0, timeLength) :
     userBandDecVarDict_res = bandResDecVar[timeStage]
     userBandDecVarDict_uti = bandUtilizationDecVar[timeStage]
@@ -1040,13 +1062,20 @@ for timeStage in range(0, timeLength) :
                     bandDecVar_res = paymentBandDecVarDict_res[str(bandPayment)]
                     bandDecVar_uti = paymentBandDecVarDict_uti[str(bandPayment)]
                     
-                    model.addConstr(bandDecVar_res, GRB.GREATER_EQUAL, 0)
-                    model.addConstr(bandDecVar_uti, GRB.GREATER_EQUAL, 0)
-            model.addConstr(bandDecVar_onDemand, GRB.GREATER_EQUAL, 0)
+                    turlmStr = 't_' + str(timeStage) + 'r_' + str(routerIndex) + 'u_' + str(userIndex) + 'l_' + str(bandContractLength) + 'm_' + str(bandPayment)
+                    
+                    model.addConstr(bandDecVar_res, GRB.GREATER_EQUAL, 0, name='c24_res:' + turlmStr)
+                    model.addConstr(bandDecVar_uti, GRB.GREATER_EQUAL, 0, name='c24_uti:' + turlmStr)
+            
+            turStr = 't_' + str(timeStage) + 'r_' + str(routerIndex) + 'u_' + str(userIndex)
+            model.addConstr(bandDecVar_onDemand, GRB.GREATER_EQUAL, 0, name='c24_on:' + turStr)
 
-print('Constraint 23 complete')
+print('Constraint 24 complete')
 
-# constraint 24 : the relationship between the number of active VMs, turned on / off VMs
+# constraint 25 : RS is binary
+
+# constraint 26 : the relationship between the number of active VMs, turned on / off VMs (this constraint has been deleted)
+'''
 for timeStage in range(0, timeLength) :
     providerNumOfActiveVmsDecVarDict = numOfActiveVmsDecVarList[timeStage]
     providerNumOfTurnedOnVmsDecVarDict = turnedOnVmVarList[timeStage]
@@ -1072,17 +1101,20 @@ for timeStage in range(0, timeLength) :
                     previousTimeStageNumOfActiveVmsDecVarDict = previousTimeStageUserNumOfActiveVmsDecVarDict[str(userIndex)]
                     previousTimeStageNumOfActiveVms = previousTimeStageNumOfActiveVmsDecVarDict[str(vmType)]
                     
-                    model.addConstr(numOfActiveVms, GRB.EQUAL, previousTimeStageNumOfActiveVms + numOfTurnedOnVms - numOfTurnedOffVms)
+                    tupiStr = 't_' + str(timeStage) + 'p_' + str(provider) + 'u_' + str(userIndex) + 'i_' + str(vmType)
+                    
+                    model.addConstr(numOfActiveVms, GRB.EQUAL, previousTimeStageNumOfActiveVms + numOfTurnedOnVms - numOfTurnedOffVms, name='c26:' + tupiStr)
 
-print('Constraint 24 complete')
+print('Constraint 26 complete')
+'''
 
-# constraint 25, 26
-# constraint 25 : the amount of produced green energy do not exceed the usage of energy
+# constraint 26, 27
+# constraint 26 : the amount of produced green energy do not exceed the usage of energy
 for timeStage in range(0, timeLength) :
-    # constraint 25, 26
+    # constraint 26, 27
     providerGreenEnergyDecVarDict = greenEnergyUsageDecVarList[timeStage]
     
-    # constraint 26
+    # constraint 27
     providerSolarEnergyToDcDecVarDict = solarEnergyToDcDecVarList[timeStage]
     providerBatteryEnergyToDcDecVarDict = batteryEnergyToDcDecVarList[timeStage]
     
@@ -1120,14 +1152,16 @@ for timeStage in range(0, timeLength) :
                 energyConsumptionDecVarList.extend([activeVmEnergyConsumptionDecVar, turnedOnVmDecVar, turnedOffVmDecVar])
                 energyConsumptionParameterList.extend([1, changeStateEnergyConsumption, changeStateEnergyConsumption])
         
-        # constraint 25
-        model.addConstr(greenEnergyUsage, GRB.LESS_EQUAL, valueOfPUE * quicksum([energyConsumptionDecVarList[index] * energyConsumptionParameterList[index] for index in range(0, len(energyConsumptionDecVarList))]))
+        tpStr = 't_' + str(timeStage) + 'p_' + str(provider)
+        
         # constraint 26
-        model.addConstr(greenEnergyUsage, GRB.EQUAL, solarEnergyToDc + chargingDischargingEffeciency * batteryEnergyToDc)
+        model.addConstr(greenEnergyUsage, GRB.LESS_EQUAL, valueOfPUE * quicksum([energyConsumptionDecVarList[index] * energyConsumptionParameterList[index] for index in range(0, len(energyConsumptionDecVarList))]), name='c26:' + tpStr)
+        # constraint 27
+        model.addConstr(greenEnergyUsage, GRB.EQUAL, solarEnergyToDc + chargingDischargingEffeciency * batteryEnergyToDc, name='c27:' + tpStr)
 
-print('Constraint 25, 26 complete')
+print('Constraint 26, 27 complete')
 
-# constraint 26 : the amount of green energy is the sum of solar panel energy and the battery energy
+# constraint 27 : the amount of green energy is the sum of solar panel energy and the battery energy
 '''
 for timeStage in range(0, timeLength) :
     providerGreenEnergyDecVarDict = greenEnergyUsageDecVarList[timeStage]
@@ -1143,7 +1177,7 @@ for timeStage in range(0, timeLength) :
         model.addConstr(greenEnergyUsage, GRB.EQUAL, solarEnergyToDc + chargingDischargingEffeciency * batteryEnergyToDc)
 '''
         
-# constraint 27 : the sum of energy used to charge the battery and energy directly supply to DC do not exceed the amount of green energy production
+# constraint 28 : the sum of energy used to charge the battery and energy directly supply to DC do not exceed the amount of green energy production
 # this is the limit of renewable energy production
 greenEnergyUsageLimitList = getGreenEnergyUsageLimit(timeLength, providerList)
 for timeStage in range(0, timeLength) :
@@ -1156,11 +1190,13 @@ for timeStage in range(0, timeLength) :
         solarEnergyToBattery = providerSolarEnergyToBatteryDecVarDict[str(provider)]
         greenEnergyLimit = providerGreenEnergyLimitDict[str(provider)]
         
-        model.addConstr(solarEnergyToBattery + solarEnergyToDc, GRB.LESS_EQUAL, greenEnergyLimit)
+        tpStr = 't_' + str(timeStage) + 'p_' + str(provider)
+        
+        model.addConstr(solarEnergyToBattery + solarEnergyToDc, GRB.LESS_EQUAL, greenEnergyLimit, name='c28:' + tpStr)
 
-print('Constraint 27 complete')
+print('Constraint 28 complete')
 
-# constraint 28 : the usage of green energy do not exceed the amount of produced renewable energy
+# constraint 29 : the usage of green energy do not exceed the amount of produced renewable energy
 for providerIndex in range(0, len(providerList)) :
     provider = providerList[providerIndex]
     greenEnergyUsageList = []
@@ -1175,11 +1211,13 @@ for providerIndex in range(0, len(providerList)) :
         greenEnergyUsageList.append(greenEnergyUsage)
         greenEnergyLimitList.append(greenEnergyLimit)
     
-    model.addConstr(quicksum(greenEnergyUsageList), GRB.LESS_EQUAL, quicksum(greenEnergyLimitList))
+    pStr = 'p_' + str(provider)
+    
+    model.addConstr(quicksum(greenEnergyUsageList), GRB.LESS_EQUAL, quicksum(greenEnergyLimitList), name='c29:' + pStr)
 
-print('Constraint 28 complete')
+print('Constraint 29 complete')
 
-# constraint 29 : the energy level at the beginning of next time period is the energy level at the end of this time period plus the energy charged to the battery
+# constraint 30 : the energy level at the beginning of next time period is the energy level at the end of this time period plus the energy charged to the battery
 for timeStage in range(1, timeLength) :
     providerBatteryEnergyLevelDecVarDict_beg = batteryEnergyLevelDecVarList_beg[timeStage]
     providerPreviousTimeBatteryEnergyLevelDecVarDict_end = batteryEnergyLevelDecVarList_end[timeStage - 1]
@@ -1191,11 +1229,13 @@ for timeStage in range(1, timeLength) :
         previousTimeBatteryEnergyLevel_end = providerPreviousTimeBatteryEnergyLevelDecVarDict_end[str(provider)]
         previousTimeSolarEnergyToBattery = providerPreviousTimeSolarEnergyToBatteryDecVarDict[str(provider)]
         
-        model.addConstr(batteryEnergyLevel_beg, GRB.EQUAL, previousTimeBatteryEnergyLevel_end + chargingDischargingEffeciency * previousTimeSolarEnergyToBattery)
+        tpStr = 't_' + str(timeStage) + 'p_' + str(provider)
+        
+        model.addConstr(batteryEnergyLevel_beg, GRB.EQUAL, previousTimeBatteryEnergyLevel_end + chargingDischargingEffeciency * previousTimeSolarEnergyToBattery, name='c30:' + tpStr)
 
-print('Constraint 29 complete')
+print('Constraint 30 complete')
 
-# constraint 30 : the energy supplied from battery to DC is the gap between the energy level at the beginning and the end
+# constraint 31 : the energy supplied from battery to DC is the gap between the energy level at the beginning and the end
 for timeStage in range(0, timeLength) :
     providerBatteryEnergyToDcDecVarDict = batteryEnergyToDcDecVarList[timeStage]
     providerBatteryEnergyLevelDecVarDict_beg = batteryEnergyLevelDecVarList_beg[timeStage]
@@ -1207,11 +1247,13 @@ for timeStage in range(0, timeLength) :
         batteryEnergyLevel_beg = providerBatteryEnergyLevelDecVarDict_beg[str(provider)]
         batteryEnergyLevel_end = providerBatteryEnergyLevelDecVarDict_end[str(provider)]
         
-        model.addConstr(batteryEnergyToDc, GRB.EQUAL, batteryEnergyLevel_beg - batteryEnergyLevel_end)
+        tpStr = 't_' + str(timeStage) + 'p_' + str(provider)
+        
+        model.addConstr(batteryEnergyToDc, GRB.EQUAL, batteryEnergyLevel_beg - batteryEnergyLevel_end, name='c31:' + tpStr)
 
-print('Constraint 30 complete')
+print('Constraint 31 complete')
 
-# constraint 31 : the energy that the battery can supply do not exceed the energy level of this battery at the beginning
+# constraint 32 : the energy that the battery can supply do not exceed the energy level of this battery at the beginning
 for timeStage in range(0, timeLength) :
     providerBatteryEnergyToDcDecVarDict = batteryEnergyToDcDecVarList[timeStage]
     providerBatteryEnergyLevelDecVarDict_beg = batteryEnergyLevelDecVarList_beg[timeStage]
@@ -1221,11 +1263,13 @@ for timeStage in range(0, timeLength) :
         batteryEnergyToDc = providerBatteryEnergyToDcDecVarDict[str(provider)]
         batteryEnergyLevel_beg = providerBatteryEnergyLevelDecVarDict_beg[str(provider)]
         
-        model.addConstr(batteryEnergyToDc, GRB.LESS_EQUAL, batteryEnergyLevel_beg)
+        tpStr = 't_' + str(timeStage) + 'p_' + str(provider)
+        
+        model.addConstr(batteryEnergyToDc, GRB.LESS_EQUAL, batteryEnergyLevel_beg, name='c32:' + tpStr)
 
-print('Constraint 31 complete')
+print('Constraint 32 complete')
 
-# constraint 32, 33 : bettery energy level limit
+# constraint 33, 34 : bettery energy level limit
 batteryEnergyCapacity = 1486
 for timeStage in range(0, timeLength) :
     providerBatteryEnergyLevelDecVarDict_beg = batteryEnergyLevelDecVarList_beg[timeStage]
@@ -1236,12 +1280,14 @@ for timeStage in range(0, timeLength) :
         batteryEnergyLevel_beg = providerBatteryEnergyLevelDecVarDict_beg[str(provider)]
         batteryEnergyLevel_end = providerBatteryEnergyLevelDecVarDict_end[str(provider)]
         
-        model.addConstr(batteryEnergyLevel_beg, GRB.LESS_EQUAL, batteryEnergyCapacity)
-        model.addConstr(batteryEnergyLevel_end, GRB.LESS_EQUAL, batteryEnergyCapacity)
+        tpStr = 't_' + str(timeStage) + 'p_' + str(provider)
+        
+        model.addConstr(batteryEnergyLevel_beg, GRB.LESS_EQUAL, batteryEnergyCapacity, name='c33:' + tpStr)
+        model.addConstr(batteryEnergyLevel_end, GRB.LESS_EQUAL, batteryEnergyCapacity, name='c34:' + tpStr)
 
-print('Constraint 32, 33 complete')
+print('Constraint 33, 34 complete')
 
-# constraint 34, 35 : the limit of battery charging and discharging
+# constraint 35, 36 : the limit of battery charging and discharging
 # assume that the c rate of the battery is 73 Ah permodule and there are 5 modules in a battery
 chargingDischargingLimit = 73 * 5
 for timeStage in range(0, timeLength) :
@@ -1253,14 +1299,16 @@ for timeStage in range(0, timeLength) :
         solarEnergyToBattery = providerSolarEnergyToBatteryDecVarDict[str(provider)]
         batteryEnergyToDc = providerBatteryEnergyToDcDecVarDict[str(provider)]
         
-        # constraint 34
-        model.addConstr(solarEnergyToBattery, GRB.LESS_EQUAL, chargingDischargingLimit)
-        # constraint 35
-        model.addConstr(batteryEnergyToDc, GRB.LESS_EQUAL, chargingDischargingLimit)
+        tpStr = 't_' + str(timeStage) + 'p_' + str(provider)
+        
+        # constraint 36
+        model.addConstr(solarEnergyToBattery, GRB.LESS_EQUAL, chargingDischargingLimit, name='c35:' + tpStr)
+        # constraint 37
+        model.addConstr(batteryEnergyToDc, GRB.LESS_EQUAL, chargingDischargingLimit, name='c36:' + tpStr)
 
-print('Constraint 34, 35 complete')
+print('Constraint 35, 36 complete')
 
-# constraint 36, 37, 38 : initialize the battery energy level and theenergy that can supplied by the battery
+# constraint 37, 38, 39 : initialize the battery energy level and theenergy that can supplied by the battery
 for providerIndex in range(0, len(providerList)) :
     provider = providerList[providerIndex]
     
@@ -1268,57 +1316,60 @@ for providerIndex in range(0, len(providerList)) :
     batteryEnergyLevel_beg = batteryEnergyLevelDecVarList_beg[0][str(provider)]
     batteryEnergyLevel_end = batteryEnergyLevelDecVarList_end[0][str(provider)]
     
-    # constraint 36
-    model.addConstr(batteryEnergyToDc, GRB.EQUAL, 0)
-    # constraint 37
-    model.addConstr(batteryEnergyLevel_beg, GRB.EQUAL, 0)
+    pStr = 't_0p_' + str(provider)
+    
     # constraint 38
-    model.addConstr(batteryEnergyLevel_end, GRB.EQUAL, 0)
+    model.addConstr(batteryEnergyToDc, GRB.EQUAL, 0, name='c37:' + pStr)
+    # constraint 39
+    model.addConstr(batteryEnergyLevel_beg, GRB.EQUAL, 0, name='c38:' + pStr)
+    # constraint 40
+    model.addConstr(batteryEnergyLevel_end, GRB.EQUAL, 0, name='c39:' + pStr)
 
-print('Constraint 36, 37, 38 complete')
+print('Constraint 37, 38, 39 complete')
 
-# constraint 39 : the flow entering a router is equal to the flow leaving a router
+# constraint 40 : the flow entering a router is equal to the flow leaving a router
 for timeStage in range(0, timeLength) :
     edgeFlowDecVarDict = edgeFlowDecVarList[timeStage]
     for router in routerData :
         routerIndex = router.routerIndex
-        routerDirectlyConnectedEdges = router.edges
+        routerDirectlyConnectedInFlowEdges = router.inFlowEdges
+        routerDirectlyConnectedOutFlowEdges = router.outFlowEdges
         
         flowInDecVarList = []
         flowOutDecVarList = []
         
-        for edgeIndex in routerDirectlyConnectedEdges :
-            flowTypeDecVarDict = edgeFlowDecVarDict[str(edgeIndex)]
-            for flowTypeIndex in range(2) :
-                flowTypeList = ['in', 'out']
-                flowType = flowTypeList[flowTypeIndex]
-                userFlowDecVarDict = flowTypeDecVarDict[str(flowType)]
-                for userIndex in range(0, numOfUsers) :
-                    flowDecVar = userFlowDecVarDict[str(userIndex)]
-                    
-                    if flowType == 'in' :
-                        flowInDecVarList.append(flowDecVar)
-                    else :
-                        flowOutDecVarList.append(flowDecVar)
+        for edgeIndex in routerDirectlyConnectedInFlowEdges :
+            userFlowDecVarDict = edgeFlowDecVarDict[str(edgeIndex)]
+            for userIndex in range(0, numOfUsers) :
+                userInFlow = userFlowDecVarDict[str(userIndex)]
+                flowInDecVarList.append(userInFlow)
+                
+        for edgeIndex in routerDirectlyConnectedOutFlowEdges :
+            userFlowDecVarDict = edgeFlowDecVarDict[str(edgeIndex)]
+            for userIndex in range(0, numOfUsers) :
+                userOutFlow = userFlowDecVarDict[str(userIndex)]
+                flowOutDecVarList.append(userOutFlow)
         
-        model.addConstr(quicksum(flowInDecVarList), GRB.EQUAL, quicksum(flowOutDecVarList))
+        turStr = 't_' + str(timeStage) + 'r_' + str(routerIndex)
+        
+        model.addConstr(quicksum(flowInDecVarList), GRB.EQUAL, quicksum(flowOutDecVarList), name='c40:' + turStr)
 
-print('Constraint 39 complete')
+print('Constraint 40 complete')
 
-# constraint 40 : the sum of flow leaving a router is the sum of utilization and on-demand bandwidth
+# constraint 41 : the sum of flow leaving a router is the sum of utilization and on-demand bandwidth
 for timeStage in range(0, timeLength) :
     edgeFlowDecVarDict = edgeFlowDecVarList[timeStage]
     for router in routerData :
         routerIndex = router.routerIndex
-        routerDirectlyConnectedEdges = router.edges
+        routerDirectlyConnectedOutFlowEdges = router.outFlowEdges
         
         for userIndex in range(0, numOfUsers) :
             outFlowDecVarList = []
             
-            for edgeIndex in routerDirectlyConnectedEdges :
+            for edgeIndex in routerDirectlyConnectedOutFlowEdges :
                 edgeFlowDecVarDict = edgeFlowDecVarList[timeStage]
                 flowTypeDecVarDict = edgeFlowDecVarDict[str(edgeIndex)]
-                flowDecVar = flowTypeDecVarDict['out'][str(userIndex)]
+                flowDecVar = flowTypeDecVarDict[str(userIndex)]
                 outFlowDecVarList.append(flowDecVar)
             
             utilizationAndOnDemandBandDecVarList = []
@@ -1337,11 +1388,13 @@ for timeStage in range(0, timeLength) :
             onDemandBand = routerBandOnDemandDecVarDict[str(routerIndex)]
             utilizationAndOnDemandBandDecVarList.append(onDemandBand)
             
-            model.addConstr(quicksum(outFlowDecVarList), GRB.LESS_EQUAL, quicksum(utilizationAndOnDemandBandDecVarList))
+            turStr = 't_' + str(timeStage) + 'r_' + str(routerIndex)
+            
+            model.addConstr(quicksum(outFlowDecVarList), GRB.LESS_EQUAL, quicksum(utilizationAndOnDemandBandDecVarList), name='c41:' + turStr)
 
-print('Constraint 40 complete')
+print('Constraint 41 complete')
 
-# constraint 41 : the bandwidth requirement of VMs in a provider should be satisfied
+# constraint 42 : the bandwidth requirement of VMs in a provider should be satisfied
 outboundBandReqDict = getOutboundBandwidthRequirement(instanceData)
 for timeStage in range(0, timeLength) :
     providerVmDecVarDict_uti = vmUtilizationDecVar[timeStage]
@@ -1377,20 +1430,21 @@ for timeStage in range(0, timeLength) :
                 
                 vmTypeUtilizationAndOnDemandDict[str(vmType)] = utilizationAndOnDemandDecVarList
             
-            userEdgeFlowDecVarList = []
+            providerOutFlowEdgeDecVarList = []
             for edgeIndex in providerDirectlyConnectedEdges :
                 edgeFlowDecVarDict = edgeFlowDecVarList[timeStage]
-                flowTypeDecVarDict = edgeFlowDecVarDict[str(edgeIndex)]
-                userFlowDecVarDict = flowTypeDecVarDict['out']
+                userFlowDecVarDict = edgeFlowDecVarDict[str(edgeIndex)]
                 flowDecVar = userFlowDecVarDict[str(userIndex)]
                 
-                userEdgeFlowDecVarList.append(flowDecVar)
+                providerOutFlowEdgeDecVarList.append(flowDecVar)
             
-            model.addConstr(quicksum(userEdgeFlowDecVarList), GRB.GREATER_EQUAL, quicksum([outboundBandReqDict[str(vmType)] * quicksum(vmTypeUtilizationAndOnDemandDict[str(vmType)])]))
+            tpuStr = 't_' + str(timeStage) + 'p_' + str(provider) + 'u_' + str(userIndex)
+            
+            model.addConstr(quicksum(providerOutFlowEdgeDecVarList), GRB.GREATER_EQUAL, quicksum([outboundBandReqDict[str(vmType)] * quicksum(vmTypeUtilizationAndOnDemandDict[str(vmType)])]), name='c42:' + tpuStr)
 
-print('Constraint 41 complete')
+print('Constraint 42 complete')
 
-# constraint 42 : the bandwidth required by the flow entering a user should be satistied
+# constraint 43 : the bandwidth required by the flow entering a user should be satistied
 userEdgeList = networkTopology['user']
 for timeStage in range(0, timeLength) :
     for userIndex in range(0, numOfUsers) :
@@ -1400,8 +1454,7 @@ for timeStage in range(0, timeLength) :
         
         for edgeIndex in userDirectlyConnectedEdges :
             edgeFlowDecVarDict = edgeFlowDecVarList[timeStage]
-            flowTypeDecVarDict = edgeFlowDecVarDict[str(edgeIndex)]
-            userFlowDecVarDict = flowTypeDecVarDict['in']
+            userFlowDecVarDict = edgeFlowDecVarDict[str(edgeIndex)]
             flowDecVar = userFlowDecVarDict[str(userIndex)]
             userFlowInEdgeDecVarList.append(flowDecVar)
         
@@ -1414,29 +1467,27 @@ for timeStage in range(0, timeLength) :
             
             for edgeIndex in providerDirectlyConnectedEdges :
                 edgeFlowDecVarDict = edgeFlowDecVarList[timeStage]
-                flowTypeDecVarDict = edgeFlowDecVarDict[str(edgeIndex)]
-                userFlowDecVarDict = flowTypeDecVarDict['out']
+                userFlowDecVarDict = edgeFlowDecVarDict[str(edgeIndex)]
                 flowDecVar = userFlowDecVarDict[str(userIndex)]
                 
                 flowOutDecVarListOfProviders.append(flowDecVar)
         
-        model.addConstr(quicksum(userFlowInEdgeDecVarList), GRB.GREATER_EQUAL, quicksum(flowOutDecVarListOfProviders))
+        tuStr = 't_' + str(timeStage) + 'u_' + str(userIndex)
+        
+        model.addConstr(quicksum(userFlowInEdgeDecVarList), GRB.GREATER_EQUAL, quicksum(flowOutDecVarListOfProviders), name='c43:' + tuStr)
 
-print('Constraint 42 complete')
+print('Constraint 43 complete')
 
-# constraint 43 : the decision variables of flow should greater than 0
+# constraint 44 : the decision variables of flow should greater than 0
 for timeStage in range(0, timeLength) :
     edgeFlowDecVarDict = edgeFlowDecVarList[timeStage]
     for edgeIndex in range(0, len(edgeList)) :
-        flowTypeDecVarDict = edgeFlowDecVarDict[str(edgeIndex)]
-        for flowType in ['in', 'out'] :
-            userFlowDecVarDict = flowTypeDecVarDict[str(flowType)]
-            for userIndex in range(0, numOfUsers) :
-                flow = userFlowDecVarDict[str(userIndex)]
-                
-                model.addConstr(flow, GRB.GREATER_EQUAL, 0)
-
-print('Constraint 43 complete')
+        userFlowDecVarDict = edgeFlowDecVarDict[str(edgeIndex)]
+        for userIndex in range(0, numOfUsers) :
+            flow = userFlowDecVarDict[str(userIndex)]
+            tueStr = 't_' + str(timeStage) + 'e_' + str(edgeIndex) + 'u_' + str(userIndex)
+            model.addConstr(flow, GRB.GREATER_EQUAL, 0, name='c44:' + tueStr)
+print('Constraint 44 complete')
 
 model.write("thesis.lp")
 

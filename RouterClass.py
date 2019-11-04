@@ -9,4 +9,5 @@ class RouterClass :
         self.reservationFee = reservationFee
         self.utilizationFee = utilizationFee
         self.onDemandFee = onDemandFee
-        self.edges = edges
+        self.inFlowEdges = edges[0]
+        self.outFlowEdges = edges[1]

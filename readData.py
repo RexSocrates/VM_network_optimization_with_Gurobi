@@ -145,7 +145,10 @@ def getNetworkTopology() :
             node = row[0]
             edges = row[1:]
             
-            directlyConnectedEdges = [edgeIndex for edgeIndex in range(0, len(edges)) if edges[edgeIndex] == '1']
+            directlyConnectedInFlowEdges = [edgeIndex for edgeIndex in range(0, len(edges)) if edges[edgeIndex] == '1']
+            directlyConnectedOutFlowEdges = [edgeIndex for edgeIndex in range(0, len(edges)) if edges[edgeIndex] == '2']
+            
+            directlyConnectedEdges = directlyConnectedInFlowEdges.extend(directlyConnectedOutFlowEdges)
             
             if node[0] == 'u' :
                 networkDict['user'].append(directlyConnectedEdges)
@@ -154,7 +157,7 @@ def getNetworkTopology() :
                 providerName = nodeSplitList[1]
                 networkDict['provider'][str(providerName)] = directlyConnectedEdges
             else :
-                networkDict['router'].append(directlyConnectedEdges)
+                networkDict['router'].append([directlyConnectedInFlowEdges, directlyConnectedOutFlowEdges])
         
         return networkDict
 
