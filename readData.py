@@ -148,7 +148,7 @@ def getNetworkTopology() :
             directlyConnectedInFlowEdges = [edgeIndex for edgeIndex in range(0, len(edges)) if edges[edgeIndex] == '1']
             directlyConnectedOutFlowEdges = [edgeIndex for edgeIndex in range(0, len(edges)) if edges[edgeIndex] == '2']
             
-            directlyConnectedEdges = directlyConnectedInFlowEdges.extend(directlyConnectedOutFlowEdges)
+            directlyConnectedEdges = [edgeIndex for edgeIndex in range(0, len(edges)) if edges[edgeIndex] is not '0']
             
             if node[0] == 'u' :
                 networkDict['user'].append(directlyConnectedEdges)
