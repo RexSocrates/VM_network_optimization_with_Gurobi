@@ -1336,27 +1336,24 @@ for timeStage in range(0, timeLength) :
         routerDirectlyConnectedInFlowEdges = router.inFlowEdges
         routerDirectlyConnectedOutFlowEdges = router.outFlowEdges
         
-        flowInDecVarList = []
-        flowOutDecVarList = []
         
-        for edgeIndex in routerDirectlyConnectedInFlowEdges :
-            userFlowDecVarDict = edgeFlowDecVarDict[str(edgeIndex)]
-            for userIndex in range(0, numOfUsers) :
-                userInFlow = userFlowDecVarDict[str(userIndex)]
-                flowInDecVarList.append(userInFlow)
-                
-        for edgeIndex in routerDirectlyConnectedOutFlowEdges :
-            userFlowDecVarDict = edgeFlowDecVarDict[str(edgeIndex)]
-            for userIndex in range(0, numOfUsers) :
-                userOutFlow = userFlowDecVarDict[str(userIndex)]
-                flowOutDecVarList.append(userOutFlow)
         
-        turStr = 't_' + str(timeStage) + 'r_' + str(routerIndex)
-        print('Time stage : ', timeStage)
-        print('Router index : ', routerIndex)
-        print()
-        
-        model.addConstr(quicksum(flowInDecVarList), GRB.EQUAL, quicksum(flowOutDecVarList), name='c40:' + turStr)
+        for userIndex in range(0, numOfUsers) :
+            flowInDecVarList = []
+            flowOutDecVarList = []
+            
+            for edgeIndex in routerDirectlyConnectedInFlowEdges :
+                userFlowDecVarDict = edgeFlowDecVarDict[str(edgeIndex)]
+                inFlow = userFlowDecVarDict[str(userIndex)]
+                flowInDecVarList.append(inFlow)
+            
+            for edgeIndex in routerDirectlyConnectedOutFlowEdges :
+                userFlowDecVarDict = edgeFlowDecVarDict[str(edgeIndex)]
+                outFlow = userFlowDecVarDict[str(userIndex)]
+                flowOutDecVarList.append(outFlow)
+            
+            turStr = 't_' + str(timeStage) + 'r_' + str(routerIndex) + 'u_' + str(userIndex)
+            model.addConstr(quicksum(flowInDecVarList), GRB.EQUAL, quicksum(flowOutDecVarList), name='c40:' + turStr)
 
 print('Constraint 40 complete')
 
@@ -1392,7 +1389,7 @@ for timeStage in range(0, timeLength) :
             onDemandBand = routerBandOnDemandDecVarDict[str(routerIndex)]
             utilizationAndOnDemandBandDecVarList.append(onDemandBand)
             
-            turStr = 't_' + str(timeStage) + 'r_' + str(routerIndex)
+            turStr = 't_' + str(timeStage) + 'r_' + str(routerIndex) + 'u_' + str(userIndex)
             
             model.addConstr(quicksum(outFlowDecVarList), GRB.LESS_EQUAL, quicksum(utilizationAndOnDemandBandDecVarList), name='c41:' + turStr)
 
@@ -1444,7 +1441,7 @@ for timeStage in range(0, timeLength) :
             
             tpuStr = 't_' + str(timeStage) + 'p_' + str(provider) + 'u_' + str(userIndex)
             
-            model.addConstr(quicksum(providerOutFlowEdgeDecVarList), GRB.GREATER_EQUAL, quicksum([outboundBandReqDict[str(vmType)] * quicksum(vmTypeUtilizationAndOnDemandDict[str(vmType)])]), name='c42:' + tpuStr)
+            model.addConstr(quicksum(providerOutFlowEdgeDecVarList), GRB.GREATER_EQUAL, quicksum([outboundBandReqDict[str(vmType)] * quicksum(vmTypeUtilizationAndOnDemandDict[str(vmType)]) for vmType in vmTypeList]), name='c42:' + tpuStr)
 
 print('Constraint 42 complete')
 
