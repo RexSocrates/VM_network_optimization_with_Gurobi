@@ -466,7 +466,7 @@ for timeStage in range(0, timeLength) :
             routerOn = model.addVar(vtype=GRB.CONTINUOUS, name='RO_' + timeRouterStr)
             routerOff = model.addVar(vtype=GRB.CONTINUOUS, name='RF_' + timeRouterStr)
             
-            routerBandwidthUsage = model.addVar(vtype=GRB.CONTINUOUS)
+            routerBandwidthUsage = model.addVar(vtype=GRB.CONTINUOUS, name='routerBandUsage_' + timeRouterStr)
             
             routerEnergyConsumptionDecVarDict[str(routerIndex)] = routerEnergyConsumption
             routerStatusDecVarDict[str(routerIndex)] = routerStatus
@@ -1024,7 +1024,7 @@ for timeStage in range(0, timeLength) :
         
         trStr = 't_' + str(timeStage) + 'r_' + str(routerIndex)
         
-        model.addConstr(quicksum(bandUtilizationAndOnDemandDecVarList), GRB.LESS_EQUAL, routerStatus * 1.0, name='c22:' + trStr)
+        model.addConstr(quicksum(bandUtilizationAndOnDemandDecVarList), GRB.LESS_EQUAL, routerStatus * routerCapacity, name='c22:' + trStr)
 
 print('Constraint 22 complete')
 
