@@ -208,3 +208,17 @@ def getVmDataConfiguration(instanceData) :
     configDict['vmPaymentList'] = vmPaymentList
     
     return configDict
+
+# get the list of routers, one router index only appears once in this list
+def getRouterList(routerData) :
+    recordedRouterIndex = []
+    routerList = []
+    
+    for router in routerData :
+        routerIndex = router.routerIndex
+        
+        if routerIndex not in recordedRouterIndex :
+            recordedRouterIndex.append(routerIndex)
+            routerList.append(router)
+    return routerList
+    

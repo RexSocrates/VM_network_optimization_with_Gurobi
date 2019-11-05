@@ -180,6 +180,7 @@ print('VM Cost decision variable complete')
 numOfRouters = len(networkTopology['router'])
 routerData = getRouterBandwidthPrice(networkTopology)
 sortedRouter = sortRouter(routerData)
+routerList = getRouterList(routerData)
 
 # record the cost of using network bandwidth
 bandwidthCostDecVarList = []
@@ -424,7 +425,7 @@ for timeStage in range(0, timeLength) :
 print('VM Energy decision variable complete')
 
 # Network energy
-routerAreaDict = getRouterAreaDict(routerData)
+routerAreaDict = getRouterAreaDict(routerList)
 
 # decision variables
 # the energy consumption of each router
@@ -702,7 +703,7 @@ for timeStage in range(0, timeLength) :
     
     # constraint 14
     edgeFlowDecVarDict = edgeFlowDecVarList[timeStage]
-    for router in routerData :
+    for router in routerList :
         routerIndex = router.routerIndex
         
         routerStatus = routerStatusDecVarDict[str(routerIndex)]
@@ -760,7 +761,7 @@ for timeStage in range(0, timeLength) :
     routerEnergyConsumptionDecVarDict = routerEnergyConsumptionDecVarList[timeStage]
     routerStatusDecVarDict = routerStatusDecVarList[timeStage]
     routerBandwidthUsageDecVarDict = routerBandwidthUsageDecVarList[timeStage]
-    for router in routerData :
+    for router in routerList :
         routerIndex = router.routerIndex
         routerEnergyConsumption = routerEnergyConsumptionDecVarDict[str(routerIndex)]
         routerStatus = routerStatusDecVarDict[str(routerIndex)]
@@ -774,7 +775,7 @@ for timeStage in range(0, timeLength) :
 for timeStage in range(0, timeLength) :
     edgeFlowDecVarDict = edgeFlowDecVarList[timeStage]
     routerBandwidthUsageDecVarDict = routerBandwidthUsageDecVarList[timeStage]
-    for router in routerData :
+    for router in routerList :
         routerIndex = router.routerIndex
         routerDirectlyConnectedEdges = router.edges
         routerBandwidthUsage = routerBandwidthUsageDecVarDict[str(routerIndex)]
@@ -967,7 +968,7 @@ print('Constraint 20 complete')
                         
 # constraint 21 : effective bandiwdth
 for userIndex in range(0, numOfUsers) :
-    for router in routerData :
+    for router in routerList :
         routerIndex = router.routerIndex
         for bandContractLength in [5, 10] :
             for bandPayment in ['No upfront', 'Partial upfront', 'All upfront'] :
@@ -995,7 +996,7 @@ print('Constraint 21 complete')
 
 # constraint 22 : router's bandwidth limit
 for timeStage in range(0, timeLength) :
-    for router in routerData :
+    for router in routerList :
         routerIndex = router.routerIndex
         bandUtilizationAndOnDemandDecVarList = []
         
@@ -1029,7 +1030,7 @@ for timeStage in range(0, timeLength) :
 print('Constraint 22 complete')
 
 # constraint 23 : router status initialization
-for router in routerData :
+for router in routerList :
     routerIndex = router.routerIndex
     routerStatusDecVarDict = routerStatusDecVarList[0]
     routerStatus = routerStatusDecVarDict[str(routerIndex)]
@@ -1049,7 +1050,7 @@ for timeStage in range(0, timeLength) :
         routerBandDecVarDict_res = userBandDecVarDict_res[str(userIndex)]
         routerBandDecVarDict_uti = userBandDecVarDict_uti[str(userIndex)]
         routerBandDecVarDict_onDemand = userBandDecVarDict_onDemand[str(userIndex)]
-        for router in routerData :
+        for router in routerList :
             routerIndex = router.routerIndex
             
             contractBandDecVarDict_res = routerBandDecVarDict_res[str(routerIndex)]
@@ -1330,7 +1331,7 @@ print('Constraint 37, 38, 39 complete')
 # constraint 40 : the flow entering a router is equal to the flow leaving a router
 for timeStage in range(0, timeLength) :
     edgeFlowDecVarDict = edgeFlowDecVarList[timeStage]
-    for router in routerData :
+    for router in routerList :
         routerIndex = router.routerIndex
         routerDirectlyConnectedInFlowEdges = router.inFlowEdges
         routerDirectlyConnectedOutFlowEdges = router.outFlowEdges
@@ -1351,6 +1352,9 @@ for timeStage in range(0, timeLength) :
                 flowOutDecVarList.append(userOutFlow)
         
         turStr = 't_' + str(timeStage) + 'r_' + str(routerIndex)
+        print('Time stage : ', timeStage)
+        print('Router index : ', routerIndex)
+        print()
         
         model.addConstr(quicksum(flowInDecVarList), GRB.EQUAL, quicksum(flowOutDecVarList), name='c40:' + turStr)
 
@@ -1359,7 +1363,7 @@ print('Constraint 40 complete')
 # constraint 41 : the sum of flow leaving a router is the sum of utilization and on-demand bandwidth
 for timeStage in range(0, timeLength) :
     edgeFlowDecVarDict = edgeFlowDecVarList[timeStage]
-    for router in routerData :
+    for router in routerList :
         routerIndex = router.routerIndex
         routerDirectlyConnectedOutFlowEdges = router.outFlowEdges
         
