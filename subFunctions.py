@@ -40,8 +40,13 @@ def demandGenerator(timeLength, userList, vmTypes) :
         for user in userList :
             vmDemandForSingleUser = dict()
             for vm in vmTypes :
-                vmDemand = random.randint(10, 30)
+                vmDemand = 0
+                
+                if time > 0 :
+                    vmDemand = random.randint(10, 30)
+                
                 vmDemandForSingleUser[vm] = vmDemand
+                    
             vmDemandForUsers.append(vmDemandForSingleUser)
         timeList.append(vmDemandForUsers)
     return timeList
@@ -147,7 +152,10 @@ def generateVmDemand(timeLength, numOfUsers, vmTypeList) :
             for vmTypeIndex in range(0, len(vmTypeList)) :
                 vmType = vmTypeList[vmTypeIndex]
                 
-                vmDemand = random.randint(15, 30)
+                vmDemand = 0
+                
+                if timeStage > 0 :
+                    vmDemand = random.randint(15, 30)
                 
                 vmTypeDemandDict[str(vmType)] = vmDemand
             userVmDemandDict[str(userIndex)] = vmTypeDemandDict

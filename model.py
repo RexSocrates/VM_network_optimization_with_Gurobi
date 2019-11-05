@@ -1490,6 +1490,28 @@ for timeStage in range(0, timeLength) :
             model.addConstr(flow, GRB.GREATER_EQUAL, 0, name='c44:' + tueStr)
 print('Constraint 44 complete')
 
+for providerIndex in range(0, len(providerList)) :
+    provider = providerList[providerIndex]
+    for userIndex in range(0, numOfUsers) :
+        for vmTypeIndex in range(0, len(vmTypeList)) :
+            vmType = vmTypeList[vmTypeIndex]
+            
+            for contractIndex in range(0, len(vmContractLengthList)) :
+                contractLength = vmContractLengthList[contractIndex]
+                for paymentIndex in range(0, len(vmPaymentList)) :
+                    payment = vmPaymentList[paymentIndex]
+                    
+                    vmUtilization = vmUtilizationDecVar[0][str(provider)][str(userIndex)][str(vmType)][str(contractLength)][str(payment)]
+                    
+                    tupikjStr = 't_0u_' + str(userIndex) + 'p_' + str(provider) + 'i_' + str(vmType) + 'k_' + str(contractLength) + 'j_' + str(payment)
+                    
+                    model.addConstr(vmUtilization, GRB.EQUAL, 0, name='c45:' + tupikjStr)
+                    
+            vmOnDemand = vmOnDemandDecVar[0][str(provider)][str(userIndex)][str(vmType)]
+            
+            tupiStr = 't_0u_' + str(userIndex) + 'p_' + str(provider) + 'i_' + str(vmType)
+            model.addConstr(vmOnDemand, GRB.EQUAL, 0, name='c45:' + tupiStr)
+
 model.write("thesis.lp")
 
 
