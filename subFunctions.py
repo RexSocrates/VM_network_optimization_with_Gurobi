@@ -1,5 +1,6 @@
 # sub functions
 import random
+import csv
 
 # get the list of instance types 
 def getVmTypesList(instanceData) :
@@ -229,4 +230,12 @@ def getRouterList(routerData) :
             recordedRouterIndex.append(routerIndex)
             routerList.append(router)
     return routerList
-    
+
+def writeModelResult(filename, column, data) :
+    with open(filename, 'w', encoding='utf-8', newline='') as csvfile :
+        writer = csv.writer(csvfile)
+        
+        writer.writerow(column)
+        
+        for singleData in data :
+            writer.writerow(singleData)

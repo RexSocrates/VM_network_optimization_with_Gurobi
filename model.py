@@ -1516,4 +1516,15 @@ model.write("thesis.lp")
 
 
 model.optimize()
+model.write('result.sol')
 print("Objective function value : ", model.ObjVal)
+
+resultColumn = ['Variable Name', 'Value']
+resultData = []
+
+for v in model.getVars() :
+    varName = v.varName
+    varValue = v.x
+    resultData.append([varName, varValue])
+
+writeModelResult('modelResult.csv', resultColumn, resultData)
