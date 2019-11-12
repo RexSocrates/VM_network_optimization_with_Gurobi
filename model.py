@@ -8,10 +8,8 @@ import random
 
 instanceData = getVirtualResource()
 vmDataConfiguration = getVmDataConfiguration(instanceData)
-# providerList = getProvidersNameList(instanceData)
 providerList = vmDataConfiguration['providerList']
 providerAreaDict = getProviderAreaDict(instanceData)
-# vmTypeList = getVmTypesList(instanceData)
 vmTypeList = vmDataConfiguration['vmTypeList']
 storageAndBandwidthPrice = getCostOfStorageBandBandwidth()
 networkTopology = getNetworkTopology()
@@ -19,7 +17,7 @@ networkTopology = getNetworkTopology()
 
 model = Model('VM_network_and_energy_optimization_model')
 
-timeLength = 6
+timeLength = 30000
 numOfUsers = len(networkTopology['user'])
 # vmContractLengthList = [10, 30]
 vmContractLengthList = vmDataConfiguration['vmContractLengthList']
@@ -104,7 +102,7 @@ for timeStage in range(0, timeLength) :
                         # at time stage t
                         # by user u
                         # adopted contract k and payment option j
-                        reservationVar = model.addVar(lb=0.0, ub=GRB.INFINITY, vtype=GRB.INTEGER, name=resDecVarName)
+                        reservationVar = model.addVar(lb=0.0, vtype=GRB.INTEGER, name=resDecVarName)
                         utilizationVar = model.addVar(lb=0.0, vtype=GRB.INTEGER, name=utiDecVarName)
                         
                         paymentOptionDecVar_res[paymentOption] = reservationVar
@@ -179,7 +177,10 @@ print('VM Cost decision variable complete')
 # Bandwidth
 numOfRouters = len(networkTopology['router'])
 routerData = getRouterBandwidthPrice(networkTopology)
-sortedRouter = sortRouter(routerData)
+routerDataConfig = getRouterDataConfiguration(routerData)
+routerContractList = routerDataConfig['contractList']
+routerPyamentList = routerDataConfig['payment']
+sortedRouter = sortRouter(routerData, numOfRouters, routerContractList, routerPyamentList)
 routerList = getRouterList(routerData)
 
 # record the cost of using network bandwidth
@@ -199,9 +200,9 @@ for userIndex in range(0, numOfUsers) :
     routerEffectiveBandDecVarDict = dict()
     for routerIndex in range(0, numOfRouters) :
         contractEffectiveBandDecVarDict = dict()
-        for bandResContractLength in [5, 10] :
+        for bandResContractLength in routerContractList :
             paymentEffectiveBandDecVarDict = dict()
-            for bandResPayment in ['No upfront', 'Partial upfront', 'All upfront'] :
+            for bandResPayment in routerPyamentList :
                 effectiveBandDecVarList = []
                 for timeStage in range(0, timeLength) :
                     effectiveBandDecVarList.append([])
@@ -228,16 +229,14 @@ for timeStage in range(0, timeLength) :
             # record the price of on-demand bandwidth price
             routerOnDemandFee = 0
             
-            for bandResContractIndex in range(2) :
-                bandResContractLengthList = [5, 10]
-                bandResContractLength = bandResContractLengthList[bandResContractIndex]
+            for bandResContractIndex in range(0, len(routerContractList)) :
+                bandResContractLength = routerContractList[bandResContractIndex]
                 
                 bandPaymentOptionDecVar_res = dict()
                 bandPaymentOptionDecVar_uti = dict()
                 
-                for bandPaymentOptionIndex in range(3) :
-                    bandPaymentOptionList = ['No upfront', 'Partial upfront', 'All upfront']
-                    bandPaymentOption = bandPaymentOptionList[bandPaymentOptionIndex]
+                for bandPaymentOptionIndex in range(0, len(routerPyamentList)) :
+                    bandPaymentOption = routerPyamentList[bandPaymentOptionIndex]
                     
                     bandResDecVarName = 'bandRes_t_' + str(timeStage) + 'u_' + str(userIndex) + 'r_' + str(routerIndex) + 'l_' + str(bandResContractLength) + 'm_' + str(bandPaymentOption)
                     bandUtiDecVarName = 'bandUti_t_' + str(timeStage) + 'u_' + str(userIndex) + 'r_' + str(routerIndex) + 'l_' + str(bandResContractLength) + 'm_' + str(bandPaymentOption)
@@ -445,7 +444,7 @@ idleRouterEnergyConsumption = 1000
 # assume that switch the state of router is the 5% of fully loaded energy consumption
 routerChangeStateEnergyConsumption = fullyLoadedRouterEnergyConsumption * 0.05
 # assume that the capacity of each router is 1,000 Gbps
-routerCapacity = 1000.0
+routerCapacity = 100000.0
     
 # equation 9 the cost of energy consumption of network flow
 for timeStage in range(0, timeLength) :
@@ -970,8 +969,8 @@ print('Constraint 20 complete')
 for userIndex in range(0, numOfUsers) :
     for router in routerList :
         routerIndex = router.routerIndex
-        for bandContractLength in [5, 10] :
-            for bandPayment in ['No upfront', 'Partial upfront', 'All upfront'] :
+        for bandContractLength in routerContractList :
+            for bandPayment in routerPyamentList :
                 for timeStage in range(0, timeLength) :
                     # effective bandwidth
                     routerEffectiveBandDecVarDict = effectiveBandDecVarDict[str(userIndex)]
@@ -1004,8 +1003,8 @@ for timeStage in range(0, timeLength) :
         routerStatus = routerStatusDecVarDict[str(routerIndex)]
         
         for userIndex in range(0, numOfUsers) :
-            for bandContractLength in [5, 10] :
-                for bandPayment in ['No upfront', 'Partial upfront', 'All upfront'] :
+            for bandContractLength in routerContractList :
+                for bandPayment in routerPyamentList :
                     userBandUtilization = bandUtilizationDecVar[timeStage]
                     
                     routerBandUtilization = userBandUtilization[str(userIndex)]
@@ -1056,10 +1055,10 @@ for timeStage in range(0, timeLength) :
             contractBandDecVarDict_res = routerBandDecVarDict_res[str(routerIndex)]
             contractBandDecVarDict_uti = routerBandDecVarDict_uti[str(routerIndex)]
             bandDecVar_onDemand = routerBandDecVarDict_onDemand[str(routerIndex)]
-            for bandContractLength in [5, 10] :
+            for bandContractLength in routerContractList :
                 paymentBandDecVarDict_res = contractBandDecVarDict_res[str(bandContractLength)]
                 paymentBandDecVarDict_uti = contractBandDecVarDict_uti[str(bandContractLength)]
-                for bandPayment in ['No upfront', 'Partial upfront', 'All upfront'] :
+                for bandPayment in routerPyamentList :
                     bandDecVar_res = paymentBandDecVarDict_res[str(bandPayment)]
                     bandDecVar_uti = paymentBandDecVarDict_uti[str(bandPayment)]
                     
@@ -1374,8 +1373,8 @@ for timeStage in range(0, timeLength) :
                 outFlowDecVarList.append(flowDecVar)
             
             utilizationAndOnDemandBandDecVarList = []
-            for bandContractLength in [5, 10] :
-                for bandPayment in ['No upfront', 'Partial upfront', 'All upfront'] :
+            for bandContractLength in routerContractList :
+                for bandPayment in routerPyamentList :
                     userBandUtilizationDecVarDict = bandUtilizationDecVar[timeStage]
                     routerBandUtilizationDecVarDict = userBandUtilizationDecVarDict[str(userIndex)]
                     contractBandUtilizationDecVarDict = routerBandUtilizationDecVarDict[str(routerIndex)]
@@ -1516,7 +1515,7 @@ model.write("thesis.lp")
 
 
 model.optimize()
-model.write('result.sol')
+# model.write('result.sol')
 print("Objective function value : ", model.ObjVal)
 
 resultColumn = ['Variable Name', 'Value']

@@ -85,29 +85,47 @@ def sortVM(instanceData, providerList, vmTypeList, contractLengthList, paymentLi
                 for payment in paymentOptionList :
                     print(newVmList[pro][vmType][str(contractLength)][payment])
     '''
-    return newVmList    
+    return newVmList  
+
+def getRouterDataConfiguration(routerData) :
+    routerContractLengthList = []
+    routerPaymentOptionList = []
+    
+    for router in routerData :
+        contractLength = router.contractLength
+        payment = router.paymentOption
+        
+        if contractLength not in routerContractLengthList :
+            routerContractLengthList.append(contractLength)
+        
+        if payment not in routerPaymentOptionList :
+            routerPaymentOptionList.append(payment)
+    
+    routerDataConfig = dict()
+    routerDataConfig['contractList'] = routerContractLengthList
+    routerDataConfig['payment'] = routerPaymentOptionList
+    
+    return routerDataConfig
 
 # sort the router accorging to the router, contract length and payment options
-def sortRouter(routerData) :
+def sortRouter(routerData, numOfRouters, routerContract, routerPayment) :
     sortedRouterData = dict()
-    for routerIndex in range(len(routerData)) :
+    for routerIndex in range(0, numOfRouters) :
         contractsOfRouterDict = dict()
-        contractLengthList = [5, 10]
-        for contractLengthIndex in range(2) :
-            contractLength = contractLengthList[contractLengthIndex]
+        for contractLengthIndex in range(0, len(routerContract)) :
+            contractLength = routerContract[contractLengthIndex]
             
             paymentsOfContractDict = dict()
             
-            paymentList = ['No upfront', 'Partial upfront', 'All upfront']
-            for paymentIndex in range(3) :
-                payment = paymentList[paymentIndex]
+            for paymentIndex in range(0, len(routerPayment)) :
+                payment = routerPayment[paymentIndex]
                 
                 for router in routerData :
                     routerSeries = router.routerIndex
                     routerContractLength = router.contractLength
-                    routerPayment = router.paymentOption
+                    routerPaymentOption = router.paymentOption
                     
-                    if routerSeries == routerIndex and routerContractLength == contractLength and routerPayment == payment :
+                    if routerSeries == routerIndex and routerContractLength == contractLength and routerPaymentOption == payment :
                         paymentsOfContractDict[str(payment)] = router
                         break
             contractsOfRouterDict[str(contractLength)] = paymentsOfContractDict
@@ -155,8 +173,8 @@ def generateVmDemand(timeLength, numOfUsers, vmTypeList) :
                 
                 vmDemand = 0
                 
-                if timeStage > 0 :
-                    vmDemand = random.randint(15, 30)
+                if timeStage > 4 :
+                    vmDemand = random.randint(10, 80)
                 
                 vmTypeDemandDict[str(vmType)] = vmDemand
             userVmDemandDict[str(userIndex)] = vmTypeDemandDict

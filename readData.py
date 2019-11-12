@@ -29,7 +29,7 @@ def getVirtualResource() :
         area = row[0]
         provider = row[1]
         instanceType = row[2]
-        contract = int(row[3])
+        contract = int(float(row[3]))
         paymentOption = row[4]
         reservationFee = float(row[5])
         utilizationFee = float(row[6])
@@ -69,6 +69,7 @@ def getRouterBandwidthPrice(networkTopology) :
             
             
             if routerIndex >= len(routerEdgesList) :
+                print('Router index : ', routerIndex)
                 break
             else :
                 # get the edges that directly connect to the router
@@ -103,6 +104,7 @@ def readEnergyPricingFile() :
 
 # read the file of cloud provider capacity
 def getProviderCapacity(providerNetworkEdges) :
+    cloudProvidersLimitDict = dict()
     with open('goldenSample_provider_capacity.csv', 'r', newline='', encoding='utf-8') as csvfile :
         rows = csv.reader(csvfile)
 
@@ -111,20 +113,34 @@ def getProviderCapacity(providerNetworkEdges) :
             rowData.append(row)
         
         column = rowData[0]
-        cloudProvidersDict = dict()
         for data in rowData[1:] :
+            providerCapacityDict = dict()
             provider = data[0]
             coresLimit = float(data[1])
             memoryLimit = float(data[2])
             storageLimit = float(data[3])
             internalBandwidthLimit = float(data[4])
             
-            directlyConnectedEdges = providerNetworkEdges[str(provider)]
+            providerCapacityDict['core'] = coresLimit
+            providerCapacityDict['memory'] = memoryLimit
+            providerCapacityDict['storage'] = storageLimit
+            providerCapacityDict['band'] = internalBandwidthLimit
             
-            newProvider = CloudProvider(provider, coresLimit, memoryLimit, storageLimit, internalBandwidthLimit, directlyConnectedEdges)
-            cloudProvidersDict[str(provider)] = newProvider
+            cloudProvidersLimitDict[provider] = providerCapacityDict
+    
+    cloudProvidersDict = dict()
+    for key in providerNetworkEdges :
+        providerName = key
+        providerLimitDict = cloudProvidersLimitDict[providerName]
+        coresLimit = providerLimitDict['core']
+        memoryLimit = providerLimitDict['memory']
+        storageLimit = providerLimitDict['storage']
+        bandLimit = providerLimitDict['band']
+        directlyConnectedEdges = providerNetworkEdges[key]
         
-        return cloudProvidersDict
+        newProvider = CloudProvider(provider, coresLimit, memoryLimit, storageLimit, bandLimit, directlyConnectedEdges)
+        cloudProvidersDict[key] = newProvider
+    return cloudProvidersDict
 
 # read the network topology
 def getNetworkTopology() :
