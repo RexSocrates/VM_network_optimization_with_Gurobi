@@ -180,11 +180,102 @@ def orderByTimePeriodsAscending(windowSize, overlap, timeLength, numOfUsers, pro
                     relaxedVarDict[routerStatusVarName] = 0
         
         # put three sets into a dictionary and add the dictionary at the end of the list
-        periodVarSets = dict()
-        periodVarSets['fix'] = fixedVarDict
-        periodVarSets['optimize'] = optimizedVarDict
-        periodVarSets['relax'] = relaxedVarDict
+        periodVarDict = dict()
+        periodVarDict['fix'] = fixedVarDict
+        periodVarDict['optimize'] = optimizedVarDict
+        periodVarDict['relax'] = relaxedVarDict
         
-        subProblemsList.append(periodVarSets)
+        subProblemsList.append(periodVarDict)
+    
+    return subProblemsList
+
+# a function used to configure the variable sets of fixed, optimized and relaxed for time and stage decomposition
+def orderByTimePeriodsAndStagesAscending(windowSize, overlap, timeLength, numOfUsers, providerList, vmTypeList, vmContractList, vmPaymentList, numOfRouters) :
+    movingSteps = windowSize * overlap
+    subProblemsList = []
+    
+    # count how many windows in time decomposition
+    windowPeriodList_start = []
+    windowPeriodList_end = []
+    
+    windowPeriod_start = 0
+    windowPeriod_end = windowSize
+    
+    while(windowPeriod_end <= timeLength) :
+        print()
+        windowPeriodList_start.append(windowPeriod_start)
+        windowPeriodList_end.append(windowPeriod_end)
+        
+        windowPeriod_start += movingSteps
+        windowPeriod_end = min(windowPeriod_end + movingSteps, timeLength)
+    
+    for periodIndex in range(0, len(windowPeriodList_start)) :
+        windowPeriod_start = windowPeriodList_start[periodIndex]
+        windowPeriod_end = windowPeriodList_end[periodIndex]
+        
+        for timeStage in range(0, timeLength) :
+            for stage in [1, 2] :
+                
+                fixedVarDict = dict()
+                optimizedVarDict = dict()
+                relaxedVarDict = dict()
+                
+                for providerIndex in range(0, len(providerList)) :
+                    provider = providerList[providerIndex]
+                    for userIndex in range(0, numOfUsers) :
+                        for vmTypeIndex in range(0, len(vmTypeList)) :
+                            vmType = vmTypeList[vmTypeIndex]
+                            for vmContractLength in vmContractList :
+                                for vmPayment in vmPaymentList :
+                                    # VM reservation
+                                    resDecVarName = 'vmRes_t_' + str(timeStage) + 'p_' + str(provider) + 'u_' + str(userIndex) + 'i_' + str(vmType) + 'k_' + str(vmContractLength) + 'j_' + str(vmPayment)
+                                    # VM utilization
+                                    utiDecVarName = 'vmUti_t_' + str(timeStage) + 'p_' + str(provider) + 'u_' + str(userIndex) + 'i_' + str(vmType) + 'k_' + str(vmContractLength) + 'j_' + str(vmPayment)
+                                    
+                                    if timeStage < windowPeriod_start :
+                                        fixedVarDict[resDecVarName] = 0
+                                        fixedVarDict[utiDecVarName] = 0
+                                    elif timeStage >= windowPeriod_start and timeStage < windowPeriod_end and stage == 1 :
+                                        optimizedVarDict[resDecVarName] = 0
+                                        optimizedVarDict[utiDecVarName] = 0
+                                    elif timeStage >= windowPeriod_start and timeStage < windowPeriod_end and stage == 2 :
+                                        fixedVarDict[resDecVarName] = 0
+                                        fixedVarDict[utiDecVarName] = 0
+                                    else :
+                                        relaxedVarDict[resDecVarName] = 0
+                                        relaxedVarDict[utiDecVarName] = 0
+                                    
+                                    
+                            # on-demand variable name
+                            onDemandDecVarName = 'vmOnDemand_t_' + str(timeStage) + 'p_' + str(provider) + 'u_' + str(userIndex) + 'i_' + str(vmType)
+                            
+                            if timeStage < windowPeriod_start :
+                                fixedVarDict[onDemandDecVarName] = 0
+                            elif timeStage >= windowPeriod_start and timeStage < windowPeriod_end and stage == 1 :
+                                optimizedVarDict[onDemandDecVarName] = 0
+                            elif timeStage >= windowPeriod_start and timeStage < windowPeriod_end and stage == 2 :
+                                fixedVarDict[onDemandDecVarName] = 0
+                            else :
+                                relaxedVarDict[onDemandDecVarName] = 0
+                            
+                for routerIndex in range(0, numOfRouters) :
+                    timeRouterStr = 't_' + str(timeStage) + 'r_' + str(routerIndex)
+                    routerStatusVarName = 'RS_' + timeRouterStr
+                    
+                    if timeStage < windowPeriod_start :
+                        fixedVarDict[routerStatusVarName] = 0
+                    elif timeStage >= windowPeriod_start and timeStage < windowPeriod_end and stage == 1 :
+                        relaxedVarDict[routerStatusVarName] = 0
+                    elif timeStage >= windowPeriod_start and timeStage < windowPeriod_end and stage == 2 :
+                        optimizedVarDict[routerStatusVarName] = 0
+                    else :
+                        relaxedVarDict[routerStatusVarName] = 0
+                # add three variable sets into a dictionary and add it at the end of the list
+                periodAndStageVarDict = dict()
+                periodAndStageVarDict['fix'] = fixedVarDict
+                periodAndStageVarDict['optimize'] = optimizedVarDict
+                periodAndStageVarDict['relax'] = relaxedVarDict
+            
+                subProblemsList.append(periodAndStageVarDict)
     
     return subProblemsList
