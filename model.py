@@ -17,7 +17,7 @@ networkTopology = getNetworkTopology()
 
 model = Model('VM_network_and_energy_optimization_model')
 
-timeLength = 30000
+timeLength = 100
 numOfUsers = len(networkTopology['user'])
 # vmContractLengthList = [10, 30]
 vmContractLengthList = vmDataConfiguration['vmContractLengthList']

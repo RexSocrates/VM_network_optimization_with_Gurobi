@@ -33,25 +33,6 @@ def getProviderAreaDict(instanceData) :
                 providerListOfArea.append(instanceProvider)
     return areaDict
 
-# generate the demand for each instance type at each time period
-def demandGenerator(timeLength, userList, vmTypes) :
-    timeList = []
-    for time in range(0, timeLength) :
-        vmDemandForUsers = []
-        for user in userList :
-            vmDemandForSingleUser = dict()
-            for vm in vmTypes :
-                vmDemand = 0
-                
-                if time > 0 :
-                    vmDemand = random.randint(10, 30)
-                
-                vmDemandForSingleUser[vm] = vmDemand
-                    
-            vmDemandForUsers.append(vmDemandForSingleUser)
-        timeList.append(vmDemandForUsers)
-    return timeList
-
 # sort the VM data accroding to the providers, VM types, contracts, payment options
 def sortVM(instanceData, providerList, vmTypeList, contractLengthList, paymentList) :
     # store the sorted VM data
@@ -162,6 +143,8 @@ def getRouterAreaDict(routerList) :
 
 # generate the VM demand data randomly
 def generateVmDemand(timeLength, numOfUsers, vmTypeList) :
+    random.seed(10)
+    
     vmDemandList = []
     
     for timeStage in range(0, timeLength) :
@@ -173,7 +156,7 @@ def generateVmDemand(timeLength, numOfUsers, vmTypeList) :
                 
                 vmDemand = 0
                 
-                if timeStage > 4 :
+                if timeStage > 0 :
                     vmDemand = random.randint(10, 80)
                 
                 vmTypeDemandDict[str(vmType)] = vmDemand
