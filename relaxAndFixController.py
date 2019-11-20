@@ -1,4 +1,5 @@
 # relax and fix controller
+import math
 
 # initialize the window for time decomposition
 def initWindow_TD(windowSize, timeLength, numOfUsers, providerList, vmTypeList, vmContractList, vmPaymentList, numOfRouters) :
@@ -99,7 +100,7 @@ def initWindow_TSD(windowSize, timeLength, numOfUsers, providerList, vmTypeList,
 
 # define a function to divide the model into multiple sub-problems
 def orderByTimePeriodsAscending(windowSize, overlap, timeLength, numOfUsers, providerList, vmTypeList, vmContractList, vmPaymentList, numOfRouters) :
-    movingSteps = windowSize * overlap
+    movingSteps = math.ceil(windowSize * overlap)
     subProblemsList = []
     
     # count how many windows in time decomposition
@@ -191,7 +192,7 @@ def orderByTimePeriodsAscending(windowSize, overlap, timeLength, numOfUsers, pro
 
 # a function used to configure the variable sets of fixed, optimized and relaxed for time and stage decomposition_1
 def orderByTimePeriodsAndStagesAscending(windowSize, overlap, timeLength, numOfUsers, providerList, vmTypeList, vmContractList, vmPaymentList, numOfRouters) :
-    movingSteps = windowSize * overlap
+    movingSteps = math.ceil(windowSize * overlap)
     subProblemsList = []
     
     # count how many windows in time decomposition
@@ -284,7 +285,7 @@ def orderByTimePeriodsAndStagesAscending(windowSize, overlap, timeLength, numOfU
 # stage 1 VM reservation
 # stage 2 VM utilization and router bandwidth reservation, utilization
 def orderByTimePeriodsAndStagesAscending_2(windowSize, overlap, timeLength, numOfUsers, providerList, vmTypeList, vmContractList, vmPaymentList, numOfRouters) :
-    movingSteps = windowSize * overlap
+    movingSteps = math.ceil(windowSize * overlap)
     subProblemList = []
     
     # count how many windows in time decomposition
@@ -383,4 +384,4 @@ def orderByTimePeriodsAndStagesAscending_2(windowSize, overlap, timeLength, numO
                 
                 subProblemList.append(periodAndStageVarDict)
     
-    return periodAndStageVarDict
+    return subProblemList
