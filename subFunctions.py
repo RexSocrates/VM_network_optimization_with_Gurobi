@@ -232,6 +232,7 @@ def getRouterList(routerData) :
             routerList.append(router)
     return routerList
 
+# write the result of gurobi model
 def writeModelResult(filename, column, data) :
     with open(filename, 'w', encoding='utf-8', newline='') as csvfile :
         writer = csv.writer(csvfile)

@@ -4,7 +4,7 @@ from subFunctions import *
 from gurobipy import *
 import random
 
-def solveModel(fixedVarDict, optimizedVarDict, relaxedVarDict) :
+def solveModel(timeLength, fixedVarDict, optimizedVarDict, relaxedVarDict) :
     # get instance data from csv file, get get the lists of vm types and cloud providers from instance data
     
     instanceData = getVirtualResource()
@@ -18,7 +18,7 @@ def solveModel(fixedVarDict, optimizedVarDict, relaxedVarDict) :
     
     model = Model('VM_network_and_energy_optimization_model')
     
-    timeLength = 100
+    # timeLength = 100
     numOfUsers = len(networkTopology['user'])
     # vmContractLengthList = [10, 30]
     vmContractLengthList = vmDataConfiguration['vmContractLengthList']
@@ -1571,19 +1571,18 @@ def solveModel(fixedVarDict, optimizedVarDict, relaxedVarDict) :
     # model.write('result.sol')
     print("Objective function value : ", model.ObjVal)
     
-    resultColumn = ['Variable Name', 'Value']
-    resultData = []
+    # resultColumn = ['Variable Name', 'Value']
+    # resultData = []
     
     modelVarSolutionDict = dict()
     
     for v in model.getVars() :
         varName = v.varName
         varValue = v.x
-        resultData.append([varName, varValue])
-        
+        # resultData.append([varName, varValue])
         modelVarSolutionDict[varName] = varValue
     
-    writeModelResult('modelResult.csv', resultColumn, resultData)
+    # writeModelResult('modelResult.csv', resultColumn, resultData)
     
     return modelVarSolutionDict
     
