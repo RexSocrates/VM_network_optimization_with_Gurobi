@@ -114,6 +114,9 @@ def orderByTimePeriodsAscending(windowSize, overlap, timeLength, numOfUsers, pro
         windowPeriodList_start.append(windowPeriod_start)
         windowPeriodList_end.append(windowPeriod_end)
         
+        if windowPeriod_end >= timeLength :
+            break
+        
         windowPeriod_start = min(windowPeriod_start + movingSteps, timeLength)
         windowPeriod_end = min(windowPeriod_end + movingSteps, timeLength)
     
@@ -204,6 +207,9 @@ def orderByTimePeriodsAndStagesAscending(windowSize, overlap, timeLength, numOfU
     while(windowPeriod_end <= timeLength) :
         windowPeriodList_start.append(windowPeriod_start)
         windowPeriodList_end.append(windowPeriod_end)
+        
+        if windowPeriod_end >= timeLength :
+            break
         
         windowPeriod_start = min(windowPeriod_start + movingSteps, timeLength)
         windowPeriod_end = min(windowPeriod_end + movingSteps, timeLength)
@@ -296,6 +302,9 @@ def orderByTimePeriodsAndStagesAscending_2(windowSize, overlap, timeLength, numO
     while(windowPeriod_end <= timeLength) :
         windowPeriodList_start.append(windowPeriod_start)
         windowPeriodList_end.append(windowPeriod_end)
+        
+        if windowPeriod_end >= timeLength :
+            break
         
         windowPeriod_start = min(windowPeriod_start + movingSteps, timeLength)
         windowPeriod_end = min(windowPeriod_end + movingSteps, timeLength)
