@@ -111,7 +111,6 @@ def orderByTimePeriodsAscending(windowSize, overlap, timeLength, numOfUsers, pro
     windowPeriod_end = windowSize
     
     while(windowPeriod_end <= timeLength) :
-        print()
         windowPeriodList_start.append(windowPeriod_start)
         windowPeriodList_end.append(windowPeriod_end)
         
@@ -203,7 +202,6 @@ def orderByTimePeriodsAndStagesAscending(windowSize, overlap, timeLength, numOfU
     windowPeriod_end = windowSize
     
     while(windowPeriod_end <= timeLength) :
-        print()
         windowPeriodList_start.append(windowPeriod_start)
         windowPeriodList_end.append(windowPeriod_end)
         
@@ -296,7 +294,6 @@ def orderByTimePeriodsAndStagesAscending_2(windowSize, overlap, timeLength, numO
     windowPeriod_end = windowSize
     
     while(windowPeriod_end <= timeLength) :
-        print()
         windowPeriodList_start.append(windowPeriod_start)
         windowPeriodList_end.append(windowPeriod_end)
         
