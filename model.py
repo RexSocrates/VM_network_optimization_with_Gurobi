@@ -103,8 +103,32 @@ def solveModel(fixedVarDict, optimizedVarDict, relaxedVarDict) :
                             # at time stage t
                             # by user u
                             # adopted contract k and payment option j
-                            reservationVar = model.addVar(lb=0.0, vtype=GRB.INTEGER, name=resDecVarName)
-                            utilizationVar = model.addVar(lb=0.0, vtype=GRB.INTEGER, name=utiDecVarName)
+                            reservationVar = None
+                            utilizationVar = None
+                            
+                            if resDecVarName in fixedVarDict :
+                                resDecVarValue = fixedVarDict[resDecVarName]
+                                reservationVar = resDecVarValue
+                            elif resDecVarName in optimizedVarDict :
+                                reservationVar = model.addVar(lb=0.0, vtype=GRB.INTEGER, name=resDecVarName)
+                            elif resDecVarName in relaxedVarDict :
+                                reservationVar = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS, name=resDecVarName)
+                            else :
+                                print('Variable set error : VM reservation')
+                                
+                            if utiDecVarName in fixedVarDict :
+                                utiDecVarValue = fixedVarDict[utiDecVarName]
+                                utilizationVar = utiDecVarValue
+                            elif utiDecVarName in optimizedVarDict :
+                                utilizationVar = model.addVar(lb=0.0, vtype=GRB.INTEGER, name=utiDecVarName)
+                            elif utiDecVarName in relaxedVarDict :
+                                utilizationVar = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS, name=utiDecVarName)
+                            else :
+                                print('Variable set error : VM utilization')
+                            
+                            
+                            # reservationVar = model.addVar(lb=0.0, vtype=GRB.INTEGER, name=resDecVarName)
+                            # utilizationVar = model.addVar(lb=0.0, vtype=GRB.INTEGER, name=utiDecVarName)
                             
                             paymentOptionDecVar_res[paymentOption] = reservationVar
                             paymentOptionDecVar_uti[paymentOption] = utilizationVar
@@ -154,7 +178,21 @@ def solveModel(fixedVarDict, optimizedVarDict, relaxedVarDict) :
                         contractDecVar_uti[str(contractLength)] = paymentOptionDecVar_uti
                     
                     onDemandDecVarName = 'vmOnDemand_t_' + str(timeStage) + 'p_' + str(provider) + 'u_' + str(userIndex) + 'i_' + str(vmType)
-                    onDemandVmVar = model.addVar(lb=0.0, vtype=GRB.INTEGER, name=onDemandDecVarName)
+                    
+                    onDemandVmVar = None
+                    
+                    if onDemandDecVarName in fixedVarDict :
+                        onDemandDecVarValue = fixedVarDict[onDemandDecVarName]
+                        onDemandVmVar = onDemandDecVarValue
+                    elif onDemandDecVarName in optimizedVarDict :
+                        onDemandVmVar = model.addVar(lb=0.0, vtype=GRB.INTEGER, name=onDemandDecVarName)
+                    elif onDemandDecVarName in relaxedVarDict :
+                        onDemandVmVar = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS, name=onDemandDecVarName)
+                    else :
+                        print('Variable set error : VM on-demand')
+                    
+                    
+                    # onDemandVmVar = model.addVar(lb=0.0, vtype=GRB.INTEGER, name=onDemandDecVarName)
                     
                     vmDecVar_res[vmType] = contractDecVar_res
                     vmDecVar_uti[vmType] = contractDecVar_uti
@@ -463,7 +501,21 @@ def solveModel(fixedVarDict, optimizedVarDict, relaxedVarDict) :
                 
                 routerEnergyConsumption = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS, name='routerEnergyConsumption_' + timeRouterStr)
                 
-                routerStatus = model.addVar(vtype=GRB.BINARY, name='RS_' + timeRouterStr)
+                routerStatusDecVarName = 'RS_' + timeRouterStr
+                
+                routerStatus = None
+                
+                if routerStatusDecVarName in fixedVarDict :
+                    routerStatusValue = fixedVarDict[routerStatusDecVarName]
+                    routerStatus = routerStatusValue
+                elif routerStatusDecVarName in optimizedVarDict :
+                    routerStatus = model.addVar(vtype=GRB.BINARY, name=routerStatusDecVarName)
+                elif routerStatusDecVarName in relaxedVarDict :
+                    routerStatus = model.addVar(vtype=GRB.CONTINUOUS, name=routerStatusDecVarName)
+                else :
+                    print('Variable set error : router status')
+                
+                # routerStatus = model.addVar(vtype=GRB.BINARY, name='RS_' + timeRouterStr)
                 routerOn = model.addVar(vtype=GRB.CONTINUOUS, name='RO_' + timeRouterStr)
                 routerOff = model.addVar(vtype=GRB.CONTINUOUS, name='RF_' + timeRouterStr)
                 
@@ -1522,10 +1574,16 @@ def solveModel(fixedVarDict, optimizedVarDict, relaxedVarDict) :
     resultColumn = ['Variable Name', 'Value']
     resultData = []
     
+    modelVarSolutionDict = dict()
+    
     for v in model.getVars() :
         varName = v.varName
         varValue = v.x
         resultData.append([varName, varValue])
+        
+        modelVarSolutionDict[varName] = varValue
     
     writeModelResult('modelResult.csv', resultColumn, resultData)
+    
+    return modelVarSolutionDict
     
