@@ -17,7 +17,7 @@ networkTopology = getNetworkTopology()
 
 model = Model('VM_network_and_energy_optimization_model')
 
-timeLength = 30000
+timeLength = 100
 numOfUsers = len(networkTopology['user'])
 # vmContractLengthList = [10, 30]
 vmContractLengthList = vmDataConfiguration['vmContractLengthList']
@@ -64,7 +64,7 @@ for providerIndex in range(0, len(providerList)) :
     effectiveVmResDecVarDict[str(provider)] = userEffectiveVmResDecVarDict
                     
 # the dictionary recording the utilization fee of reserved VMs
-utilizationFeeDict = dict()
+vmUtilizationFeeDict = dict()
 
 
 # equation 2 the cost of VMs
@@ -82,7 +82,7 @@ for timeStage in range(0, timeLength) :
             vmDecVar_uti = dict()
             vmDecVar_onDemand = dict()
             
-            vmUtilizationFeeDict = dict()
+            vmTypeUtilizationFeeDict = dict()
             for vmIndex in range(0, len(vmTypeList)) :
                 vmType = vmTypeList[vmIndex]
                 contractDecVar_res = dict()
@@ -171,7 +171,7 @@ for timeStage in range(0, timeLength) :
                 vmDecVar_res[vmType] = contractDecVar_res
                 vmDecVar_uti[vmType] = contractDecVar_uti
                 vmDecVar_onDemand[vmType] = onDemandVmVar
-                vmUtilizationFeeDict[str(vmType)] = contractUtilizationFeeDict
+                vmTypeUtilizationFeeDict[str(vmType)] = contractUtilizationFeeDict
                 
                 vmCostDecVarList.append(onDemandVmVar)
                 vmCostParameterList.append(onDemandParameter)
@@ -182,7 +182,7 @@ for timeStage in range(0, timeLength) :
         providerDecVar_res[str(provider)] = userDecVar_res
         providerDecVar_uti[str(provider)] = userDecVar_uti
         providerDecVar_onDemand[str(provider)] = userDecVar_onDemand
-        utilizationFeeDict[str(provider)] = vmUtilizationFeeDict
+        vmUtilizationFeeDict[str(provider)] = vmTypeUtilizationFeeDict
     vmResDecVar.append(providerDecVar_res)
     vmUtilizationDecVar.append(providerDecVar_uti)
     vmOnDemandDecVar.append(providerDecVar_onDemand)
@@ -226,6 +226,10 @@ for userIndex in range(0, numOfUsers) :
         routerEffectiveBandDecVarDict[str(routerIndex)] = contractEffectiveBandDecVarDict
     effectiveBandDecVarDict[str(userIndex)] = routerEffectiveBandDecVarDict
 
+# a dictionary recording the utilization fee of reserved bandwidth
+bandUtilizationFeeDict = dict()
+
+
 # equation 3 the cost of network bandwidth
 for timeStage in range(0, timeLength) :
     bandUserDecVar_res = dict()
@@ -241,6 +245,8 @@ for timeStage in range(0, timeLength) :
             bandContractDecVar_res = dict()
             bandContractDecVar_uti = dict()
             
+            bandContractUtilizationFeeDict = dict()
+            
             # record the price of on-demand bandwidth price
             routerOnDemandFee = 0
             
@@ -249,6 +255,8 @@ for timeStage in range(0, timeLength) :
                 
                 bandPaymentOptionDecVar_res = dict()
                 bandPaymentOptionDecVar_uti = dict()
+                
+                bandPaymentUtilizationFee = dict()
                 
                 for bandPaymentOptionIndex in range(0, len(routerPyamentList)) :
                     bandPaymentOption = routerPyamentList[bandPaymentOptionIndex]
@@ -264,7 +272,7 @@ for timeStage in range(0, timeLength) :
                     
                     # add decision variables to the list
                     bandwidthCostDecVarList.append(bandReservation)
-                    bandwidthCostDecVarList.append(bandUtilization)
+                    # bandwidthCostDecVarList.append(bandUtilization)
                     
                     # add parameter to the list
                     contractsOfRouter = sortedRouter[str(routerIndex)]
@@ -276,8 +284,11 @@ for timeStage in range(0, timeLength) :
                     # update the price of on-demand bandwidth
                     routerOnDemandFee = routerTupleData.onDemandFee
                     
+                    # store the utilization fee in the dictionary to calculate the monthly payment
+                    bandPaymentUtilizationFee[str(bandPaymentOption)] = routerUtilizationFee                    
+                    
                     bandwidthCostParameterList.append(routerInitialResFee)
-                    bandwidthCostParameterList.append(routerUtilizationFee)
+                    # bandwidthCostParameterList.append(routerUtilizationFee)
                     
                     # add the decision variables to the effective bandiwdth list
                     routerEffectiveBandDecVarDict = effectiveBandDecVarDict[str(userIndex)]
@@ -291,6 +302,7 @@ for timeStage in range(0, timeLength) :
                     
                 bandContractDecVar_res[str(bandResContractLength)] = bandPaymentOptionDecVar_res
                 bandContractDecVar_uti[str(bandResContractLength)] = bandPaymentOptionDecVar_uti
+                bandContractUtilizationFeeDict[str(bandResContractLength)] = bandPaymentUtilizationFee
             
             bandOnDemandDecVarName = 'bandOnDemand_t_' + str(timeStage) + 'u_' + str(userIndex) + 'r_' + str(routerIndex)
             bandOnDemand = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS, name=bandOnDemandDecVarName)
@@ -298,6 +310,7 @@ for timeStage in range(0, timeLength) :
             bandRouterDecVar_res[str(routerIndex)] = bandContractDecVar_res
             bandRouterDecVar_uti[str(routerIndex)] = bandContractDecVar_uti
             bandRouterDecVar_onDemand[str(routerIndex)] = bandOnDemand
+            bandUtilizationFeeDict[str(routerIndex)] = bandContractUtilizationFeeDict
             
             # add on demand decision to the list
             bandwidthCostDecVarList.append(bandOnDemand)
@@ -519,13 +532,13 @@ print('Edge flow decision variable complete')
 model.update()
 
 # equation 1 total cost function
-model.setObjective(quicksum([vmCostDecVarList[index] * vmCostParameterList[index] for index in range(0, len(vmCostDecVarList))]) + quicksum([utilizationFeeDict[str(provider)][str(vmType)][str(vmContract)][str(vmPayment)] * quicksum(effectiveVmResDecVarDict[str(provider)][str(userIndex)][str(vmType)][str(vmContract)][vmPayment][timeStage]) for timeStage in range(0, timeLength) for provider in providerList for uderIndex in range(0, numOfUsers) for vmType in vmTypeList for vmContract in vmContractLengthList for vmPayment in vmPaymentList]) + quicksum([bandwidthCostDecVarList[index] * bandwidthCostParameterList[index] for index in range(0, len(bandwidthCostDecVarList))]) + quicksum([sortedEnergyPrice[timeStage][str(area)] * quicksum([valueOfPUE * quicksum([activeVmEnergyConsumptionDecVarList[timeStage][str(provider)][str(userIndex)][str(vmType)] + vmChangeStateEnergyDict[str(vmType)] * turnedOnVmVarList[timeStage][str(provider)][str(userIndex)][str(vmType)] + vmChangeStateEnergyDict[str(vmType)] * turnedOffVmVarList[timeStage][str(provider)][str(userIndex)][str(vmType)] for userIndex in range(0, numOfUsers) for vmType in vmTypeList]) - greenEnergyUsageDecVarList[timeStage][str(provider)] for provider in providerAreaDict[area]]) for timeStage in range(0, timeLength) for area in providerAreaDict]) + quicksum([sortedEnergyPrice[timeStage][str(area)] * quicksum([routerEnergyConsumptionDecVarList[timeStage][str(router.routerIndex)] + routerChangeStateEnergyConsumption * routerOnDecVarList[timeStage][str(router.routerIndex)] + routerChangeStateEnergyConsumption * routerOffDecVarList[timeStage][str(router.routerIndex)] for router in routerAreaDict[area]]) for timeStage in range(0, timeLength) for area in routerAreaDict]), GRB.MINIMIZE)
+model.setObjective(quicksum([vmCostDecVarList[index] * vmCostParameterList[index] for index in range(0, len(vmCostDecVarList))]) + quicksum([vmUtilizationFeeDict[str(provider)][str(vmType)][str(vmContract)][str(vmPayment)] * quicksum(effectiveVmResDecVarDict[str(provider)][str(userIndex)][str(vmType)][str(vmContract)][vmPayment][timeStage]) for timeStage in range(0, timeLength) for provider in providerList for uderIndex in range(0, numOfUsers) for vmType in vmTypeList for vmContract in vmContractLengthList for vmPayment in vmPaymentList]) + quicksum([bandwidthCostDecVarList[index] * bandwidthCostParameterList[index] for index in range(0, len(bandwidthCostDecVarList))]) + quicksum([bandUtilizationFeeDict[str(routerIndex)][str(routerContract)][str(routerPayment)] * effectiveBandDecVarDict[str(userIndex)][str(routerIndex)][str(routerContract)][str(routerPayment)][timeStage] for timeStage in range(0, timeLength) for userIndex in range(0, numOfUsers) for routerIndex in range(0, numOfRouters) for routerContract in routerContractList for routerPayment in routerPyamentList]) + quicksum([sortedEnergyPrice[timeStage][str(area)] * quicksum([valueOfPUE * quicksum([activeVmEnergyConsumptionDecVarList[timeStage][str(provider)][str(userIndex)][str(vmType)] + vmChangeStateEnergyDict[str(vmType)] * turnedOnVmVarList[timeStage][str(provider)][str(userIndex)][str(vmType)] + vmChangeStateEnergyDict[str(vmType)] * turnedOffVmVarList[timeStage][str(provider)][str(userIndex)][str(vmType)] for userIndex in range(0, numOfUsers) for vmType in vmTypeList]) - greenEnergyUsageDecVarList[timeStage][str(provider)] for provider in providerAreaDict[area]]) for timeStage in range(0, timeLength) for area in providerAreaDict]) + quicksum([sortedEnergyPrice[timeStage][str(area)] * quicksum([routerEnergyConsumptionDecVarList[timeStage][str(router.routerIndex)] + routerChangeStateEnergyConsumption * routerOnDecVarList[timeStage][str(router.routerIndex)] + routerChangeStateEnergyConsumption * routerOffDecVarList[timeStage][str(router.routerIndex)] for router in routerAreaDict[area]]) for timeStage in range(0, timeLength) for area in routerAreaDict]), GRB.MINIMIZE)
 
 # The cost of VM usage objective function
-# quicksum([vmCostDecVarList[index] * vmCostParameterList[index] for index in range(0, len(vmCostDecVarList))]) + quicksum([utilizationFeeDict[str(provider)][str(vmType)][str(vmContract)][str(vmPayment)] * quicksum(effectiveVmResDecVarDict[str(provider)][str(userIndex)][str(vmType)][str(vmContract)][vmPayment][timeStage]) for timeStage in range(0, timeLength) for provider in providerList for uderIndex in range(0, numOfUsers) for vmType in vmTypeList for vmContract in vmContractLengthList for vmPayment in vmPaymentList])
+# quicksum([vmCostDecVarList[index] * vmCostParameterList[index] for index in range(0, len(vmCostDecVarList))]) + quicksum([vmUtilizationFeeDict[str(provider)][str(vmType)][str(vmContract)][str(vmPayment)] * quicksum(effectiveVmResDecVarDict[str(provider)][str(userIndex)][str(vmType)][str(vmContract)][vmPayment][timeStage]) for timeStage in range(0, timeLength) for provider in providerList for uderIndex in range(0, numOfUsers) for vmType in vmTypeList for vmContract in vmContractLengthList for vmPayment in vmPaymentList])
 
 # The cost of bandwidth usage objective function
-# quicksum([bandwidthCostDecVarList[index] * bandwidthCostParameterList[index] for index in range(0, len(bandwidthCostDecVarList))])
+# quicksum([bandwidthCostDecVarList[index] * bandwidthCostParameterList[index] for index in range(0, len(bandwidthCostDecVarList))]) + quicksum([bandUtilizationFeeDict[str(routerIndex)][str(routerContract)][str(routerPayment)] * effectiveBandDecVarDict[str(userIndex)][str(routerIndex)][str(routerContract)][str(routerPayment)][timeStage] for timeStage in range(0, timeLength) for userIndex in range(0, numOfUsers) for routerIndex in range(0, numOfRouters) for routerContract in routerContractList for routerPayment in routerPyamentList])
 
 # VM energy objective function
 # quicksum([sortedEnergyPrice[timeStage][str(area)] * quicksum([valueOfPUE * quicksum([activeVmEnergyConsumptionDecVarList[timeStage][str(provider)][str(userIndex)][str(vmType)] + vmChangeStateEnergyDict[str(vmType)] * turnedOnVmVarList[timeStage][str(provider)][str(userIndex)][str(vmType)] + vmChangeStateEnergyDict[str(vmType)] * turnedOffVmVarList[timeStage][str(provider)][str(userIndex)][str(vmType)] for userIndex in range(0, numOfUsers) for vmType in vmTypeList]) - greenEnergyUsageDecVarList[timeStage][str(provider)] for provider in providerAreaDict[area]]) for timeStage in range(0, timeLength) for area in providerAreaDict])
