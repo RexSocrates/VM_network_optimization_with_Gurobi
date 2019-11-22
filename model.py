@@ -1011,9 +1011,9 @@ for providerIndex in range(0, len(providerList)) :
                     
                     model.addConstr(vmUtiDecVar, GRB.EQUAL, 0, name='c20:' + upikjStr)
             # on-demand Vm
-            vmOnDemandDecVar = vmOnDemandDecVar[0][str(provider)][str(userIndex)][str(vmType)]
+            vmOnDemand = vmOnDemandDecVar[0][str(provider)][str(userIndex)][str(vmType)]
             upiStr = 't_0_p_' + str(provider) + 'u_' + str(userIndex) + 'i_' + str(vmType)
-            model.addConstr(vmOnDemandDecVar, GRB.EQUAL, 0, name='c21:' + upiStr)
+            model.addConstr(vmOnDemand, GRB.EQUAL, 0, name='c21:' + upiStr)
 
 print('Constraint 20, 21 complete')
 
@@ -1207,8 +1207,8 @@ monthlyPaymentBudget = 20
 # constraint 31 : monthly payment cost budget
 for timeStage in range(0, timeLength) :
     for userIndex in range(0, numOfUsers) :
-        upfrontCost = upfrontCostDecVarList[timeStage][userIndex]
-        monthlyCost = monthlyCostDecVarList[timeStage][userIndex]
+        upfrontCost = upfrontCostDecVarList[timeStage][str(userIndex)]
+        monthlyCost = monthlyCostDecVarList[timeStage][str(userIndex)]
         
         # VM
         vmResList = []
@@ -1229,7 +1229,7 @@ for timeStage in range(0, timeLength) :
                         vmResFee = vmReservationFeeDict[str(provider)][str(vmType)][str(vmContract)][str(vmPayment)]
                         vmResFeeList.append(vmResFee)
                         
-                        effectiveResList = effectiveVmResDecVarDict[str(provider)][str(userIndex)][str(vmType)][str(vmContract)][str(vmContract)][timeStage]
+                        effectiveResList = effectiveVmResDecVarDict[str(provider)][str(userIndex)][str(vmType)][str(vmContract)][str(vmPayment)][timeStage]
                         vmEffectiveResList.append(effectiveResList)
                         
                         vmUtiFee = vmUtilizationFeeDict[str(provider)][str(vmType)][str(vmContract)][str(vmPayment)]
