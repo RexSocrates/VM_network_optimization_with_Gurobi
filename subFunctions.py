@@ -173,8 +173,8 @@ def generateVmDemand(timeLength, numOfUsers, vmTypeList) :
                 
                 vmDemand = 0
                 
-                if timeStage > 4 :
-                    vmDemand = random.randint(10, 80)
+                if timeStage > 0 :
+                    vmDemand = random.randint(10, 15)
                 
                 vmTypeDemandDict[str(vmType)] = vmDemand
             userVmDemandDict[str(userIndex)] = vmTypeDemandDict
