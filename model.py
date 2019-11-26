@@ -1781,14 +1781,14 @@ def solveModel(timeLength, fixedVarDict, optimizedVarDict, relaxedVarDict) :
                 model.addConstr(flow, GRB.GREATER_EQUAL, 0, name='c50:' + tueStr)
     print('Constraint 50 complete')
     
-    model.write("thesis.lp")
+    # model.write("thesis.lp")
     
     
     model.optimize()
     # model.write('result.sol')
     print("Objective function value : ", model.ObjVal)
     
-    resultColumn = ['Variable Name', 'Value']
+    # resultColumn = ['Variable Name', 'Value']
     resultData = []
     
     for v in model.getVars() :
@@ -1796,5 +1796,7 @@ def solveModel(timeLength, fixedVarDict, optimizedVarDict, relaxedVarDict) :
         varValue = v.x
         resultData.append([varName, varValue])
     
-    writeModelResult('modelResult.csv', resultColumn, resultData)
-    # print(GRB.OPTIMAL)    
+    # writeModelResult('modelResult.csv', resultColumn, resultData)
+    # print(GRB.OPTIMAL)  
+    
+    return resultData
