@@ -655,14 +655,11 @@ print('Upfront cost and monthly payment decision variables complete')
 # update model
 model.update()
 
-for index in range(0, 5) :
-    print(quicksum([vmCostParameterList[index] * vmCostDecVarList[index]]))
-
 # equation 1 total cost function
 model.setObjective(quicksum([vmCostParameterList[vmCostIndex] * vmCostDecVarList[vmCostIndex] for vmCostIndex in range(0, len(vmCostDecVarList))]) + quicksum([bandwidthCostDecVarList[bandCostItemIndex] * bandwidthCostParameterList[bandCostItemIndex] for bandCostItemIndex in range(0, len(bandwidthCostDecVarList))]) + quicksum([sortedEnergyPrice[timeStage][str(area)] * quicksum([valueOfPUE * quicksum([activeVmEnergyConsumptionDecVarList[timeStage][str(provider)][str(userIndex)][str(vmType)] + vmChangeStateEnergyDict[str(vmType)] * turnedOnVmVarList[timeStage][str(provider)][str(userIndex)][str(vmType)] + vmChangeStateEnergyDict[str(vmType)] * turnedOffVmVarList[timeStage][str(provider)][str(userIndex)][str(vmType)] for userIndex in range(0, numOfUsers) for vmType in vmTypeList]) - greenEnergyUsageDecVarList[timeStage][str(provider)] for provider in providerAreaDict[area]]) for timeStage in range(0, timeLength) for area in providerAreaDict]) + quicksum([sortedEnergyPrice[timeStage][str(area)] * quicksum([routerEnergyConsumptionDecVarList[timeStage][str(router.routerIndex)] + routerChangeStateEnergyConsumption * routerOnDecVarList[timeStage][str(router.routerIndex)] + routerChangeStateEnergyConsumption * routerOffDecVarList[timeStage][str(router.routerIndex)] for router in routerAreaDict[area]]) for timeStage in range(0, timeLength) for area in routerAreaDict]), GRB.MINIMIZE)
 
 # The cost of VM usage objective function
-quicksum([vmCostParameterList[vmCostIndex] * vmCostDecVarList[vmCostIndex] for vmCostIndex in range(0, len(vmCostDecVarList))])
+# quicksum([vmCostParameterList[vmCostIndex] * vmCostDecVarList[vmCostIndex] for vmCostIndex in range(0, len(vmCostDecVarList))])
 
 # The cost of bandwidth usage objective function v1
 # quicksum([bandwidthCostDecVarList[index] * bandwidthCostParameterList[index] for index in range(0, len(bandwidthCostDecVarList))]) + quicksum([bandUtilizationFeeDict[str(routerIndex)][str(routerContract)][str(routerPayment)] * effectiveBandDecVarDict[str(userIndex)][str(routerIndex)][str(routerContract)][str(routerPayment)][timeStage] for timeStage in range(0, timeLength) for userIndex in range(0, numOfUsers) for routerIndex in range(0, numOfRouters) for routerContract in routerContractList for routerPayment in routerPaymentList])
