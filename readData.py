@@ -178,7 +178,7 @@ def getNetworkTopology() :
         return networkDict
 
 # define a function to return the cost of VM storage and bandwidth
-def getCostOfStorageBandBandwidth() :
+def getCostOfStorageAndBandwidth() :
     outputData = dict()
     with open('goldenSample_VmStoragePrice.csv', newline='', encoding='utf-8') as csvfile :
         rows = csv.reader(csvfile)
