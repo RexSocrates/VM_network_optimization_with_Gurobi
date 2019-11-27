@@ -38,7 +38,6 @@ def fixAndOptimize_orderByTimePeriodAscending(initialSolutionDecVarDict, windowS
                         vmType = vmTypeList[vmTypeIndex]
                         for vmContract in vmContractList :
                             for vmPayment in vmPaymentList :
-                                print('VM reservation and utilization')
                                 # decision variable name
                                 resDecVarName = 'vmRes_t_' + str(timeStage) + 'p_' + str(provider) + 'u_' + str(userIndex) + 'i_' + str(vmType) + 'k_' + str(vmContract) + 'j_' + str(vmPayment)
                                 utiDecVarName = 'vmUti_t_' + str(timeStage) + 'p_' + str(provider) + 'u_' + str(userIndex) + 'i_' + str(vmType) + 'k_' + str(vmContract) + 'j_' + str(vmPayment)
@@ -51,7 +50,6 @@ def fixAndOptimize_orderByTimePeriodAscending(initialSolutionDecVarDict, windowS
                                     fixedVarDict[utiDecVarName] = initialSolutionDecVarDict[utiDecVarName]
                         
                         # on-demand VM
-                        print('On-demand VM')
                         onDemandDecVarName = 'vmOnDemand_t_' + str(timeStage) + 'p_' + str(provider) + 'u_' + str(userIndex) + 'i_' + str(vmType)
                         
                         if timeStage >= windowPeriod_start and timeStage < windowPeriod_end :
