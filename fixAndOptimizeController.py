@@ -40,8 +40,8 @@ def fixAndOptimize_orderByTimePeriodAscending(initialSolutionDecVarDict, windowS
                             for vmPayment in vmPaymentList :
                                 print('VM reservation and utilization')
                                 # decision variable name
-                                resDecVarName = 'vmRes_t_' + str(timeStage) + 'p_' + str(provider) + 'u_' + str(userIndex) + 'i_' + str(vmType) + 'k_' + str(vmContractLength) + 'j_' + str(vmPayment)
-                                utiDecVarName = 'vmUti_t_' + str(timeStage) + 'p_' + str(provider) + 'u_' + str(userIndex) + 'i_' + str(vmType) + 'k_' + str(vmContractLength) + 'j_' + str(vmPayment)
+                                resDecVarName = 'vmRes_t_' + str(timeStage) + 'p_' + str(provider) + 'u_' + str(userIndex) + 'i_' + str(vmType) + 'k_' + str(vmContract) + 'j_' + str(vmPayment)
+                                utiDecVarName = 'vmUti_t_' + str(timeStage) + 'p_' + str(provider) + 'u_' + str(userIndex) + 'i_' + str(vmType) + 'k_' + str(vmContract) + 'j_' + str(vmPayment)
                                 
                                 if timeStage >= windowPeriod_start and timeStage < windowPeriod_end :
                                     optimizedVarDict[resDecVarName] = 0
