@@ -2,6 +2,7 @@
 from readData import *
 from subFunctions import *
 from relaxAndFixController import *
+from fixAndOptimizeController import *
 from model import *
 
 # configure the experiment
