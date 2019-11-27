@@ -1786,7 +1786,8 @@ def solveModel(timeLength, fixedVarDict, optimizedVarDict, relaxedVarDict) :
     
     model.optimize()
     # model.write('result.sol')
-    print("Objective function value : ", model.ObjVal)
+    objValue = model.ObjVal
+    print("Objective function value : ", objValue)
     
     # resultColumn = ['Variable Name', 'Value']
     resultDataDict = dict()
@@ -1795,6 +1796,8 @@ def solveModel(timeLength, fixedVarDict, optimizedVarDict, relaxedVarDict) :
         varName = v.varName
         varValue = v.x
         resultDataDict[str(varName)] = varValue
+    
+    resultDataDict['Cost'] = objValue
     
     # writeModelResult('modelResult.csv', resultColumn, resultData)
     # print(GRB.OPTIMAL)  
