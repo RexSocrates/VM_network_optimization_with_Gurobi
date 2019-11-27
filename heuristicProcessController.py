@@ -72,6 +72,8 @@ for subProblemIndex in range(0, len(subProblemVarList)) :
     
     for key in currentOptimizedVarDict :
         fixedAndOptimizedVarDict[key] = modelVarSolutionDict[key]
+    
+    fixedAndOptimizedVarDict['Cost'] = modelVarSolutionDict['Cost']
 
 print('Relax and Fix complete')
 
@@ -121,9 +123,14 @@ for subProblemIndex in range(0, len(fixAndOptSubProblemList)) :
     
     modelResultDict = solveModel(timeLength, fixedVarDict, optimizedVarDict, relaxedVarDict)
     
-    # update the values of optimized decision varaibles
-    for key in optimizedVarDict :
-        currentBestSolutionDict[key] = modelResultDict[key]
+    modelResultTotalCost = modelResultDict['Cost']
+    currentBestSolutionTotalCost = currentBestSolutionDict['Cost']
+    
+    # if the cost of new solution is lower than the current best solution, then  update the best solution
+    if modelResultTotalCost < currentBestSolutionTotalCost :
+        for key in optimizedVarDict :
+            currentBestSolutionDict[key] = modelResultDict[key]
+        currentBestSolutionDict['Cost'] = modelResultDict['Cost']
 
 fixAndOptResult = [[key, currentBestSolutionDict[key]] for key in currentBestSolutionDict]
 
