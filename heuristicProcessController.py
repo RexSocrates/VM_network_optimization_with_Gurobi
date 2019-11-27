@@ -44,13 +44,13 @@ subProblemVarList = []
 
 if relaxAndFixDecomposition == 1 :
     # time decomposition
-    subProblemVarList = orderByTimePeriodsAscending(windowSize, overlap, timeLength, numOfUsers, providerList, vmTypeList, vmContractList, vmPaymentList, numOfRouters)
+    subProblemVarList = relaxAndFix_orderByTimePeriodsAscending(windowSize, overlap, timeLength, numOfUsers, providerList, vmTypeList, vmContractList, vmPaymentList, numOfRouters)
 elif relaxAndFixDecomposition == 2 :
     # time and stage decomposition 1
-    subProblemVarList = orderByTimePeriodsAndStagesAscending(windowSize, overlap, timeLength, numOfUsers, providerList, vmTypeList, vmContractList, vmPaymentList, numOfRouters)
+    subProblemVarList = relaxAndFix_orderByTimePeriodsAndStagesAscending(windowSize, overlap, timeLength, numOfUsers, providerList, vmTypeList, vmContractList, vmPaymentList, numOfRouters)
 elif relaxAndFixDecomposition == 3 :
     # time and stage decomposition 2
-    subProblemVarList = orderByTimePeriodsAndStagesAscending_2(windowSize, overlap, timeLength, numOfUsers, providerList, vmTypeList, vmContractList, vmPaymentList, numOfRouters)
+    subProblemVarList = relaxAndFix_orderByTimePeriodsAndStagesAscending_2(windowSize, overlap, timeLength, numOfUsers, providerList, vmTypeList, vmContractList, vmPaymentList, numOfRouters)
 else :
     print('No decomposition was choosed')
 

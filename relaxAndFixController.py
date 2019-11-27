@@ -2,7 +2,7 @@
 import math
 
 # define a function to divide the model into multiple sub-problems
-def orderByTimePeriodsAscending(windowSize, overlap, timeLength, numOfUsers, providerList, vmTypeList, vmContractList, vmPaymentList, numOfRouters) :
+def relaxAndFix_orderByTimePeriodsAscending(windowSize, overlap, timeLength, numOfUsers, providerList, vmTypeList, vmContractList, vmPaymentList, numOfRouters) :
     movingSteps = math.ceil(windowSize * overlap)
     subProblemsList = []
     
@@ -96,7 +96,7 @@ def orderByTimePeriodsAscending(windowSize, overlap, timeLength, numOfUsers, pro
     return subProblemsList
 
 # a function used to configure the variable sets of fixed, optimized and relaxed for time and stage decomposition_1
-def orderByTimePeriodsAndStagesAscending(windowSize, overlap, timeLength, numOfUsers, providerList, vmTypeList, vmContractList, vmPaymentList, numOfRouters) :
+def relaxAndFix_orderByTimePeriodsAndStagesAscending(windowSize, overlap, timeLength, numOfUsers, providerList, vmTypeList, vmContractList, vmPaymentList, numOfRouters) :
     movingSteps = math.ceil(windowSize * overlap)
     subProblemsList = []
     
@@ -191,7 +191,7 @@ def orderByTimePeriodsAndStagesAscending(windowSize, overlap, timeLength, numOfU
 # a function used to configure the variable sets of fixed, optimized and relaxed for time and stage decomposition_2
 # stage 1 VM reservation
 # stage 2 VM utilization and router bandwidth reservation, utilization
-def orderByTimePeriodsAndStagesAscending_2(windowSize, overlap, timeLength, numOfUsers, providerList, vmTypeList, vmContractList, vmPaymentList, numOfRouters) :
+def relaxAndFix_orderByTimePeriodsAndStagesAscending_2(windowSize, overlap, timeLength, numOfUsers, providerList, vmTypeList, vmContractList, vmPaymentList, numOfRouters) :
     movingSteps = math.ceil(windowSize * overlap)
     subProblemList = []
     
