@@ -17,7 +17,7 @@ networkTopology = getNetworkTopology()
 
 model = Model('VM_network_and_energy_optimization_model')
 
-timeLength = 10
+timeLength = 100
 numOfUsers = len(networkTopology['user'])
 # vmContractLengthList = [10, 30]
 vmContractLengthList = vmDataConfiguration['vmContractLengthList']
@@ -1286,8 +1286,8 @@ print('Constraint 26 complete')
 '''
 
 # Upfront budget
-upfrontBudget = 2000
-monthlyPaymentBudget = 2000
+upfrontBudget = 150
+monthlyPaymentBudget = 150
 
 # constraint 28 : the initial reservation budget calculation of each user at each time period
 # constraint 29 : the resource utilization budget calculation of each user at each time period
@@ -1742,7 +1742,8 @@ model.write("thesis.lp")
 
 model.optimize()
 # model.write('result.sol')
-print("Objective function value : ", model.ObjVal)
+modelTotalCost = model.ObjVal
+print("Objective function value : ", modelTotalCost)
 
 resultColumn = ['Variable Name', 'Value']
 resultData = []
@@ -1751,6 +1752,7 @@ for v in model.getVars() :
     varName = v.varName
     varValue = v.x
     resultData.append([varName, varValue])
+resultData.append(['Cost', modelTotalCost])
 
 writeModelResult('modelResult.csv', resultColumn, resultData)
 # print(GRB.OPTIMAL)
