@@ -48,96 +48,69 @@ def getVirtualResource() :
 
 # read router bandwidth pricing data
 def getRouterBandwidthPrice(networkTopology) :
-    random.seed(10)
-    
+    random.seed(10)    
+    rowData = []
     with open('goldenSample_router_bandwidth_pricing.csv', 'r', newline='', encoding='utf-8') as csvfile :
-        routerList = networkTopology['router']
-        
         rows = csv.reader(csvfile)
         
-        rowData = []
         for row in rows :
             rowData.append(row)
         
-        routerAreaDict = dict()
+    routerAreaDict = dict()
+    
+    for row in rowData[1:] :
+        routerIndex = int(row[0])
+        routerArea = row[1]
+        contractLength = int(row[2])
+        paymentOption = row[3]
+        initialResFee = float(row[4])
+        utilizationFee = float(row[5])
+        onDemandFee = float(row[6])
         
-        for row in rowData[1:] :
-            routerIndex = int(row[0])
-            routerArea = row[1]
-            contractLength = int(row[2])
-            paymentOption = row[3]
-            initialResFee = float(row[4])
-            utilizationFee = float(row[5])
-            onDemandFee = float(row[6])
-            
-            if routerArea not in routerAreaDict :
-                routerIndexDict = dict()
-                routerIndexDict[routerIndex] = [row]
-                routerAreaDict[routerArea] = routerIndexDict
+        if routerArea not in routerAreaDict :
+            routerIndexDict = dict()
+            routerIndexDict[routerIndex] = [row]
+            routerAreaDict[routerArea] = routerIndexDict
+        else :
+            routerIndexDict = routerAreaDict[routerArea]
+            if routerIndex not in routerIndexDict :
+                routerList = [row]
+                routerIndexDict[routerIndex] = routerList
             else :
-                routerIndexDict = routerAreaDict[routerArea]
-                if routerIndex not in routerIndexDict :
-                    routerList = [row]
-                    routerIndexDict[routerIndex] = routerList
-                else :
-                    routerList = routerIndexDict[routerIndex]
-                    routerList.append(row)
+                routerList = routerIndexDict[routerIndex]
+                routerList.append(row)
+    
+    routerList = networkTopology['router']
+    routerData = []
+    # record the router index that has been picked up in the router data list
+    selectedRouterIndexList = []
+    # print(routerAreaDict['ap'])
+    
+    for routerIndex in range(0, len(routerList)) :
+        router = routerList[routerIndex]
+        routerArea = router[0]
+        routerEdges = router[1:]
         
-        routerData = []
-        # record the router index that has been picked up in the router data list
-        selectedRouterIndexList = []
+        areaRouterDict = routerAreaDict[routerArea]
+        newAreaRouterDictKey = list(areaRouterDict.keys())[random.randint(0, len(areaRouterDict))]
         
-        for routerIndex in range(0, len(routerList)) :
-            router = routerList[routerIndex]
-            routerArea = router[0]
-            routerEdges = router[1:]
-            
-            areaRouterDict = routerAreaDict[routerArea]
+        while newAreaRouterDictKey in selectedRouterIndexList :
             newAreaRouterDictKey = list(areaRouterDict.keys())[random.randint(0, len(areaRouterDict))]
-            
-            while newAreaRouterDictKey in selectedRouterIndexList :
-                newAreaRouterDictKey = list(areaRouterDict.keys())[random.randint(0, len(areaRouterDict))]
-            
-            selectedRouterIndexList.append(newAreaRouterDictKey)
-            routerPricingDataList = areaRouterDict[newAreaRouterDictKey]
-            
-            for router in routerPricingDataList :
-                routerArea = router[1]
-                contractLength = int(router[2])
-                paymentOption = router[3]     
-                initialResFee = float(router[4])
-                utilizationFee = float(router[5])
-                onDemandFee = float(router[6])
-                
-                newRouterData = RouterClass(routerIndex, routerArea, contractLength, paymentOption, initialResFee, utilizationFee, onDemandFee, routerEdges)
-                routerData.append(newRouterData)
-            
         
-        '''
-        routerData = []
+        selectedRouterIndexList.append(newAreaRouterDictKey)
+        routerPricingDataList = areaRouterDict[newAreaRouterDictKey]
         
-        for row in rowData[1:] :
-            routerIndex = int(row[0])
-            routerArea = row[1]
-            contractLength = int(row[2])
-            paymentOption = row[3]
-            initialResFee = float(row[4])
-            utilizationFee = float(row[5])
-            onDemandFee = float(row[6])
+        for router in routerPricingDataList :
+            routerArea = router[1]
+            contractLength = int(router[2])
+            paymentOption = router[3]     
+            initialResFee = float(router[4])
+            utilizationFee = float(router[5])
+            onDemandFee = float(router[6])
             
-            
-            if routerIndex >= len(routerList) :
-                print('Router index : ', routerIndex)
-                break
-            else :
-                # get the edges that directly connect to the router
-                edges = routerList[routerIndex]
-                newRouterData = RouterClass(routerIndex, routerArea, contractLength, paymentOption, initialResFee, utilizationFee, onDemandFee, edges)
-                routerData.append(newRouterData)
-        '''
-        
-        return routerData
-
+            newRouterData = RouterClass(routerIndex, routerArea, contractLength, paymentOption, initialResFee, utilizationFee, onDemandFee, routerEdges)
+            routerData.append(newRouterData)
+    return routerData
 
 # read energy pricing data
 def readEnergyPricingFile() :
