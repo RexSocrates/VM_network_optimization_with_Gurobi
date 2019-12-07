@@ -21,10 +21,10 @@ model = Model('VM_network_and_energy_optimization_model')
 # log file of gurobi optimizer
 model.setParam(GRB.Param.LogFile, 'log.txt')
 # set the stopping criteria for gurobi optimizer, which is the gap less than 0.01
-# model.setParam(GRB.Param.MIPGapAbs, 2)
-model.setParam(GRB.Param.MIPGap, 1.15)
+# model.setParam(GRB.Param.MIPGapAbs, 0.02)
+model.setParam(GRB.Param.MIPGap, 0.00019)
 
-timeLength = 120
+timeLength = 50
 numOfUsers = len(networkTopology['user'])
 # vmContractLengthList = [10, 30]
 vmContractLengthList = vmDataConfiguration['vmContractLengthList']
