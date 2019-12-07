@@ -14,7 +14,11 @@ vmTypeList = vmDataConfiguration['vmTypeList']
 storageAndBandwidthPrice = getCostOfStorageAndBandwidth()
 networkTopology = getNetworkTopology()
 
-testValueList = []
+modelRunTimeList = ['Runtime']
+
+testValueList = [0]
+testValueList.extend([val for val in range(10, 151, 10)])
+testValueList.reverse()
 
 for testValue in testValueList :
 	print()
@@ -1755,7 +1759,10 @@ for testValue in testValueList :
 	# model.write('result.sol')
 	modelTotalCost = model.ObjVal
 	print("Objective function value : ", modelTotalCost)
-	print('Gurobi run time : ', model.Runtime)
+	modelRuntime = model.Runtime
+	print('Gurobi run time : ', str(modelRuntime) + ' (s)')
+
+	modelRunTimeList.append(modelRuntime)
 	
 	resultColumn = ['Variable Name', 'Value']
 	resultData = []
@@ -1767,4 +1774,8 @@ for testValue in testValueList :
 	resultData.append(['Cost', modelTotalCost])
 	
 	writeModelResult('modelResult.csv', resultColumn, resultData)
-	# print(GRB.OPTIMAL)	
+	# print(GRB.OPTIMAL)
+
+runTimeResultColumn = ['Budget']
+runTimeResultColumn.extend([for testValue in testValueList])
+writeModelResult('Runtime.csv', runTimeResultColumn, modelRunTimeList)
