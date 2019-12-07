@@ -1751,6 +1751,7 @@ model.optimize()
 # model.write('result.sol')
 modelTotalCost = model.ObjVal
 print("Objective function value : ", modelTotalCost)
+print('Gurobi run time : ', model.Runtime)
 
 resultColumn = ['Variable Name', 'Value']
 resultData = []
