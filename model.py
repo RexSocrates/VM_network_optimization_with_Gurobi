@@ -1777,5 +1777,5 @@ for testValue in testValueList :
 	# print(GRB.OPTIMAL)
 
 runTimeResultColumn = ['Budget']
-runTimeResultColumn.extend([for testValue in testValueList])
+runTimeResultColumn.extend([testValue for testValue in testValueList])
 writeModelResult('Runtime.csv', runTimeResultColumn, modelRunTimeList)
