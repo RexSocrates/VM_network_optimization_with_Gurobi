@@ -21,8 +21,6 @@ testValueList.extend([val for val in range(10, 151, 10)])
 testValueList.reverse()
 
 for testValue in testValueList :
-	print()
-
 	model = Model('VM_network_and_energy_optimization_model')
 	
 	# setting model parameters
@@ -1773,7 +1771,7 @@ for testValue in testValueList :
 	    resultData.append([varName, varValue])
 	resultData.append(['Cost', modelTotalCost])
 	
-	writeModelResult('modelResult.csv', resultColumn, resultData)
+	writeModelResult('modelResult_' + str(testValue) + '.csv', resultColumn, resultData)
 	# print(GRB.OPTIMAL)
 
 runTimeResultColumn = ['Budget']
