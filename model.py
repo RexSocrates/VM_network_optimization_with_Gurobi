@@ -14,6 +14,10 @@ vmTypeList = vmDataConfiguration['vmTypeList']
 storageAndBandwidthPrice = getCostOfStorageAndBandwidth()
 networkTopology = getNetworkTopology()
 
+testValueList = []
+
+for testValue in testValueList
+
 
 model = Model('VM_network_and_energy_optimization_model')
 
