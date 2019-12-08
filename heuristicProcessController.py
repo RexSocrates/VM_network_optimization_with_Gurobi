@@ -9,7 +9,7 @@ from solveModel import *
 
 instanceData = getVirtualResource()
 vmDataConfiguration = getVmDataConfiguration(instanceData)
-storageAndBandwidthPrice = getCostOfStorageBandBandwidth()
+storageAndBandwidthPrice = getCostOfStorageAndBandwidth()
 networkTopology = getNetworkTopology()
 
 # Decomposition-required parameters : windowSize, overlap, timeLength, numOfUsers, providerList, vmTypeList, vmContractList, vmPaymentList, numOfRouters
