@@ -17,6 +17,11 @@ def solveModel(timeLength, fixedVarDict, optimizedVarDict, relaxedVarDict) :
     
     
     model = Model('VM_network_and_energy_optimization_model')
+
+    # configure the output file of model
+    model.setParam(GRB.Param.LogFile, 'log.txt')
+    # configure the stopping criteria
+    model.setParam(GRB.Param.MIPGap, 0.00019)
     
     numOfUsers = len(networkTopology['user'])
     # vmContractLengthList = [10, 30]
@@ -1788,6 +1793,8 @@ def solveModel(timeLength, fixedVarDict, optimizedVarDict, relaxedVarDict) :
     # model.write('result.sol')
     objValue = model.ObjVal
     print("Objective function value : ", objValue)
+    modelRuntime = model.Runtime
+    print('Model runtime : ', modelRuntime)
     
     # resultColumn = ['Variable Name', 'Value']
     resultDataDict = dict()
@@ -1798,6 +1805,7 @@ def solveModel(timeLength, fixedVarDict, optimizedVarDict, relaxedVarDict) :
         resultDataDict[str(varName)] = varValue
     
     resultDataDict['Cost'] = objValue
+    resultDataDict['Runtime'] = modelRuntime
     
     # writeModelResult('modelResult.csv', resultColumn, resultData)
     # print(GRB.OPTIMAL)  
