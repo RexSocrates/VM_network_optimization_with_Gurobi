@@ -2,7 +2,8 @@
 from readData import *
 from subFunctions import *
 from relaxAndFixController import *
-from model import *
+from fixAndOptimizeController import *
+from solveModel import *
 
 # configure the experiment
 
@@ -44,13 +45,13 @@ subProblemVarList = []
 
 if relaxAndFixDecomposition == 1 :
     # time decomposition
-    subProblemVarList = orderByTimePeriodsAscending(windowSize, overlap, timeLength, numOfUsers, providerList, vmTypeList, vmContractList, vmPaymentList, numOfRouters)
+    subProblemVarList = relaxAndFix_orderByTimePeriodsAscending(windowSize, overlap, timeLength, numOfUsers, providerList, vmTypeList, vmContractList, vmPaymentList, numOfRouters)
 elif relaxAndFixDecomposition == 2 :
     # time and stage decomposition 1
-    subProblemVarList = orderByTimePeriodsAndStagesAscending(windowSize, overlap, timeLength, numOfUsers, providerList, vmTypeList, vmContractList, vmPaymentList, numOfRouters)
+    subProblemVarList = relaxAndFix_orderByTimePeriodsAndStagesAscending(windowSize, overlap, timeLength, numOfUsers, providerList, vmTypeList, vmContractList, vmPaymentList, numOfRouters)
 elif relaxAndFixDecomposition == 3 :
     # time and stage decomposition 2
-    subProblemVarList = orderByTimePeriodsAndStagesAscending_2(windowSize, overlap, timeLength, numOfUsers, providerList, vmTypeList, vmContractList, vmPaymentList, numOfRouters)
+    subProblemVarList = relaxAndFix_orderByTimePeriodsAndStagesAscending_2(windowSize, overlap, timeLength, numOfUsers, providerList, vmTypeList, vmContractList, vmPaymentList, numOfRouters)
 else :
     print('No decomposition was choosed')
 
@@ -72,6 +73,8 @@ for subProblemIndex in range(0, len(subProblemVarList)) :
     
     for key in currentOptimizedVarDict :
         fixedAndOptimizedVarDict[key] = modelVarSolutionDict[key]
+    
+    fixedAndOptimizedVarDict['Cost'] = modelVarSolutionDict['Cost']
 
 print('Relax and Fix complete')
 
@@ -82,11 +85,57 @@ data = [[key, fixedAndOptimizedVarDict[key]] for key in fixedAndOptimizedVarDict
 writeModelResult('relaxAndFixModelResult.csv', column, data)
 
 
+# fix and optimize decomposition
+# 1. Time Decomposition
+# 2. Time and Stage Decomposition 1
+# 3. Time and Stage Decomposition 2
+fixAndOptimizeDecomposition = 1
 
+fixAndOptSubProblemList = []
 
+if fixAndOptimizeDecomposition == 1 :
+    # time decomposition
+    fixAndOptSubProblemList = fixAndOptimize_orderByTimePeriodAscending(fixedAndOptimizedVarDict, windowSize, overlap, timeLength, numOfUsers, providerList, vmTypeList, vmContractList, vmPaymentList, numOfRouters)
+elif fixAndOptimizeDecomposition == 2 :
+    # time and stage decomposition 1
+    fixAndOptSubProblemList = fixAndOptimize_orderByTimePeriodAndStage_1(fixedAndOptimizedVarDict, windowSize, overlap, timeLength, numOfUsers, providerList, vmTypeList, vmContractList, vmPaymentList, numOfRouters)
+elif fixAndOptimizeDecomposition == 3 :
+    # time and stage decomposition 2
+    fixAndOptSubProblemList = fixAndOptimize_orderByTimePeriodAndStage_2(fixedAndOptimizedVarDict, windowSize, overlap, timeLength, numOfUsers, providerList, vmTypeList, vmContractList, vmPaymentList, numOfRouters)
+else :
+    print('No decomposition was choosed')
 
+# the dictionary recording the best solution (to which represents the values that the variables should be fixed)
+currentBestSolutionDict = dict()
+for key in fixedAndOptimizedVarDict :
+    currentBestSolutionDict[key] = fixedAndOptimizedVarDict[key]
 
+for subProblemIndex in range(0, len(fixAndOptSubProblemList)) :
+    subProblemDict = fixAndOptSubProblemList[subProblemIndex]
+    fixedVarDict = subProblemDict['fix']
+    
+    # update the values for the decision variables that are going to be fixed
+    for key in fixedVarDict :
+        fixedVarDict[key] = currentBestSolutionDict[key]
+    
+    optimizedVarDict = subProblemDict['optimize']
+    # relaxed variable set should be empty
+    relaxedVarDict = dict()
+    
+    modelResultDict = solveModel(timeLength, fixedVarDict, optimizedVarDict, relaxedVarDict)
+    
+    modelResultTotalCost = modelResultDict['Cost']
+    currentBestSolutionTotalCost = currentBestSolutionDict['Cost']
+    
+    # if the cost of new solution is lower than the current best solution, then  update the best solution
+    if modelResultTotalCost < currentBestSolutionTotalCost :
+        for key in optimizedVarDict :
+            currentBestSolutionDict[key] = modelResultDict[key]
+        currentBestSolutionDict['Cost'] = modelResultDict['Cost']
 
+fixAndOptResult = [[key, currentBestSolutionDict[key]] for key in currentBestSolutionDict]
+
+writeModelResult('fixAndOptModelResult.csv', column, fixAndOptResult)
 
 
 
