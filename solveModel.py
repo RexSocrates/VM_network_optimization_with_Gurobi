@@ -1335,8 +1335,8 @@ def solveModel(timeLength, fixedVarDict, optimizedVarDict, relaxedVarDict) :
     '''
     
     # Upfront budget
-    upfrontBudget = 2000
-    monthlyPaymentBudget = 2000
+    upfrontBudget = 200
+    monthlyPaymentBudget = 200
     
     # constraint 28 : the initial reservation budget calculation of each user at each time period
     # constraint 29 : the resource utilization budget calculation of each user at each time period
