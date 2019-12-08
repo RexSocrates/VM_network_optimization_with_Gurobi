@@ -16,9 +16,9 @@ networkTopology = getNetworkTopology()
 
 modelRunTimeList = ['Runtime']
 
-testValueList = [0]
-testValueList.extend([val for val in range(10, 151, 10)])
-testValueList.reverse()
+testValueList = [0, 10]
+# testValueList.extend([val for val in range(10, 151, 10)])
+# testValueList.reverse()
 
 for testValue in testValueList :
 	model = Model('VM_network_and_energy_optimization_model')
@@ -1770,6 +1770,7 @@ for testValue in testValueList :
 	    varValue = v.x
 	    resultData.append([varName, varValue])
 	resultData.append(['Cost', modelTotalCost])
+	resultData.append(['Runtime', modelRuntime])
 	
 	writeModelResult('modelResult_' + str(testValue) + '.csv', resultColumn, resultData)
 	# print(GRB.OPTIMAL)
