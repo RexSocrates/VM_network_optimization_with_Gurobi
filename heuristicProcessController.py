@@ -35,8 +35,6 @@ numOfRouters = len(networkTopology['router'])
 
 for relaxAndFixDecomposition in [1, 2, 3] :
     for fixAndOptimizeDecomposition in [1, 2, 3] :
-        print()
-
         # relax and fix decomposition
         # 1. Time Decomposition
         # 2. Time and Stage Decomposition 1
