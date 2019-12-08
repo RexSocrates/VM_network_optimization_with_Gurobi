@@ -1751,7 +1751,8 @@ model.optimize()
 # model.write('result.sol')
 modelTotalCost = model.ObjVal
 print("Objective function value : ", modelTotalCost)
-print('Gurobi run time : ', model.Runtime)
+modelRuntime = model.Runtime
+print('Gurobi run time : ', modelRuntime)
 
 resultColumn = ['Variable Name', 'Value']
 resultData = []
@@ -1761,6 +1762,7 @@ for v in model.getVars() :
     varValue = v.x
     resultData.append([varName, varValue])
 resultData.append(['Cost', modelTotalCost])
+resultData.append(['Runtime', modelRuntime])
 
 writeModelResult('modelResult.csv', resultColumn, resultData)
 # print(GRB.OPTIMAL)
