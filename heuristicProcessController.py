@@ -3,7 +3,7 @@ from readData import *
 from subFunctions import *
 from relaxAndFixController import *
 from fixAndOptimizeController import *
-from model import *
+from solveModel import *
 
 # configure the experiment
 
