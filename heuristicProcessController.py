@@ -19,7 +19,7 @@ windowSize = 4
 # the percentage of the variables that are going to be re-optimized in the next iteration
 overlap = 0.5
 # the number of time periods
-timeLength = 10
+timeLength = 50
 # the number of users in the topology
 numOfUsers = len(networkTopology['user'])
 # the list of the cloud providers in the topology
@@ -33,8 +33,8 @@ vmPaymentList = vmDataConfiguration['vmPaymentList']
 # the number of the routers in the topology
 numOfRouters = len(networkTopology['router'])
 
-for relaxAndFixDecomposition in [2] :
-    for fixAndOptimizeDecomposition in [3] :
+for relaxAndFixDecomposition in [1, 2, 3] :
+    for fixAndOptimizeDecomposition in [1, 2, 3] :
         # relax and fix decomposition
         # 1. Time Decomposition
         # 2. Time and Stage Decomposition 1
