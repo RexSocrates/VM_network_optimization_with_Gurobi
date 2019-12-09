@@ -2,7 +2,6 @@
 from readData import *
 from subFunctions import *
 from gurobipy import *
-import random
 
 def solveModel(timeLength, fixedVarDict, optimizedVarDict, relaxedVarDict) :
     # get instance data from csv file, get get the lists of vm types and cloud providers from instance data
