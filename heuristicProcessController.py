@@ -56,6 +56,7 @@ for relaxAndFixDecomposition in [1, 2, 3] :
             print('No decomposition was choosed')
         
         fixedAndOptimizedVarDict = dict()
+        relaxAndFixAccumulatedRuntime = 0
         
         for subProblemIndex in range(0, len(subProblemVarList)) :
             periodVarDict = subProblemVarList[subProblemIndex]
@@ -75,12 +76,14 @@ for relaxAndFixDecomposition in [1, 2, 3] :
                 fixedAndOptimizedVarDict[key] = modelVarSolutionDict[key]
             
             fixedAndOptimizedVarDict['Cost'] = modelVarSolutionDict['Cost']
+            relaxAndFixAccumulatedRuntime += modelVarSolutionDict['Runtime']
         
         print('Relax and Fix complete')
         
         # output the result of relax and fix
         column = ['Variable name', 'Value']
         data = [[key, fixedAndOptimizedVarDict[key]] for key in fixedAndOptimizedVarDict]
+        data.append(['RelaxAndFixRuntime', relaxAndFixAccumulatedRuntime])
         
         writeModelResult('relaxAndFixModelResult_RF' + str(relaxAndFixDecomposition) + '_FO' + str(fixAndOptimizeDecomposition) + '.csv', column, data)
         
@@ -110,6 +113,8 @@ for relaxAndFixDecomposition in [1, 2, 3] :
         for key in fixedAndOptimizedVarDict :
             currentBestSolutionDict[key] = fixedAndOptimizedVarDict[key]
         
+        fixAndOptimizeAccumulatedRuntime = 0
+        
         for subProblemIndex in range(0, len(fixAndOptSubProblemList)) :
             subProblemDict = fixAndOptSubProblemList[subProblemIndex]
             fixedVarDict = subProblemDict['fix']
@@ -124,6 +129,8 @@ for relaxAndFixDecomposition in [1, 2, 3] :
             
             modelResultDict = solveModel(timeLength, fixedVarDict, optimizedVarDict, relaxedVarDict)
             
+            fixAndOptimizeAccumulatedRuntime += modelResultDict['Runtime']
+            
             modelResultTotalCost = modelResultDict['Cost']
             currentBestSolutionTotalCost = currentBestSolutionDict['Cost']
             
@@ -134,6 +141,7 @@ for relaxAndFixDecomposition in [1, 2, 3] :
                 currentBestSolutionDict['Cost'] = modelResultDict['Cost']
         
         fixAndOptResult = [[key, currentBestSolutionDict[key]] for key in currentBestSolutionDict]
+        fixAndOptResult.append(['FixAndOptRuntime', fixAndOptimizeAccumulatedRuntime])
         
         writeModelResult('fixAndOptModelResult_RF' + str(relaxAndFixDecomposition) + '_FO' + str(fixAndOptimizeDecomposition) + '.csv', column, fixAndOptResult)
 

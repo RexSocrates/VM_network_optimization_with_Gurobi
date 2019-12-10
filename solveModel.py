@@ -21,6 +21,8 @@ def solveModel(timeLength, fixedVarDict, optimizedVarDict, relaxedVarDict) :
     model.setParam(GRB.Param.LogFile, 'log.txt')
     # configure the stopping criteria
     model.setParam(GRB.Param.MIPGap, 0.00019)
+    # set node file
+    model.setParam(GRB.Param.NodefileStart, 0.5)
     
     numOfUsers = len(networkTopology['user'])
     # vmContractLengthList = [10, 30]
@@ -1334,8 +1336,8 @@ def solveModel(timeLength, fixedVarDict, optimizedVarDict, relaxedVarDict) :
     '''
     
     # Upfront budget
-    upfrontBudget = 200
-    monthlyPaymentBudget = 200
+    upfrontBudget = 150
+    monthlyPaymentBudget = 150
     
     # constraint 28 : the initial reservation budget calculation of each user at each time period
     # constraint 29 : the resource utilization budget calculation of each user at each time period
