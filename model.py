@@ -35,7 +35,7 @@ for testValue in testValueList :
 	    # model.setParam(GRB.Param.MIPGapAbs, 0.02)
 	    model.setParam(GRB.Param.MIPGap, 0.00019)
 	    
-	    timeLength = 50
+	    timeLength = 20
 	    numOfUsers = len(networkTopology['user'])
 	    # vmContractLengthList = [10, 30]
 	    vmContractLengthList = vmDataConfiguration['vmContractLengthList']
@@ -1305,7 +1305,7 @@ for testValue in testValueList :
 	    
 	    # Upfront budget
 	    upfrontBudget = testValue
-	    monthlyPaymentBudget = testValue
+	    monthlyPaymentBudget = testValue2
 	    
 	    # constraint 28 : the initial reservation budget calculation of each user at each time period
 	    # constraint 29 : the resource utilization budget calculation of each user at each time period
