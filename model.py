@@ -26,7 +26,6 @@ testValueList2.reverse()
 
 for testValue in testValueList :
     for testValue2 in testValueList2 :
-        print()
 	    model = Model('VM_network_and_energy_optimization_model')
 	    
 	    # setting model parameters
