@@ -16,7 +16,7 @@ networkTopology = getNetworkTopology()
 
 modelRunTimeList = ['Runtime']
 
-testValueList = [0, 10]
+testValueList = [0, 50, 100, 150, 10]
 # testValueList.extend([val for val in range(10, 151, 10)])
 # testValueList.reverse()
 
@@ -1774,7 +1774,3 @@ for testValue in testValueList :
 	
 	writeModelResult('modelResult_' + str(testValue) + '.csv', resultColumn, resultData)
 	# print(GRB.OPTIMAL)
-
-runTimeResultColumn = ['Budget']
-runTimeResultColumn.extend([testValue for testValue in testValueList])
-writeModelResult('Runtime.csv', runTimeResultColumn, modelRunTimeList)
