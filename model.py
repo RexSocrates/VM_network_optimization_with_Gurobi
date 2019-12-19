@@ -3,24 +3,20 @@ from readData import *
 from subFunctions import *
 from gurobipy import *
 import random
-            
-# get instance data from csv file, get get the lists of vm types and cloud providers from instance data
 
-instanceData = getVirtualResource()
-vmDataConfiguration = getVmDataConfiguration(instanceData)
-providerList = vmDataConfiguration['providerList']
-providerAreaDict = getProviderAreaDict(instanceData)
-vmTypeList = vmDataConfiguration['vmTypeList']
-storageAndBandwidthPrice = getCostOfStorageAndBandwidth()
-networkTopology = getNetworkTopology()
-
-modelRunTimeList = ['Runtime']
-
-testValueList = [0, 50, 100, 150, 10]
-# testValueList.extend([val for val in range(10, 151, 10)])
+testValueList = [1]
+testValueList.extend([val for val in range(5, 151, 5)])
 # testValueList.reverse()
 
 for testValue in testValueList :
+    # get instance data from csv file, get get the lists of vm types and cloud providers from instance data
+	instanceData = getVirtualResource(testValue)
+	vmDataConfiguration = getVmDataConfiguration(instanceData)
+	providerList = vmDataConfiguration['providerList']
+	providerAreaDict = getProviderAreaDict(instanceData)
+	vmTypeList = vmDataConfiguration['vmTypeList']
+	storageAndBandwidthPrice = getCostOfStorageAndBandwidth()
+	networkTopology = getNetworkTopology()
 	model = Model('VM_network_and_energy_optimization_model')
 	
 	# setting model parameters
@@ -30,7 +26,7 @@ for testValue in testValueList :
 	# model.setParam(GRB.Param.MIPGapAbs, 0.02)
 	model.setParam(GRB.Param.MIPGap, 0.00019)
 	
-	timeLength = 50
+	timeLength = 20
 	numOfUsers = len(networkTopology['user'])
 	# vmContractLengthList = [10, 30]
 	vmContractLengthList = vmDataConfiguration['vmContractLengthList']
@@ -1299,8 +1295,8 @@ for testValue in testValueList :
 	'''
 	
 	# Upfront budget
-	upfrontBudget = testValue
-	monthlyPaymentBudget = testValue
+	upfrontBudget = 150
+	monthlyPaymentBudget = 150
 	
 	# constraint 28 : the initial reservation budget calculation of each user at each time period
 	# constraint 29 : the resource utilization budget calculation of each user at each time period

@@ -19,7 +19,7 @@ def readSampleFile(fileName) :
     return rawData
     
 # read the VM data file and return the list of VM data
-def getVirtualResource() :
+def getVirtualResource(testValue) :
     rawData = readSampleFile('goldenSample_VM.csv')
     
     rows = rawData[1:]
@@ -40,6 +40,11 @@ def getVirtualResource() :
         storageReq = float(row[10])
         networkReq = float(row[11])
         energyConsumption = float(row[12])
+        
+        if area == 'us' :
+            reservationFee *= testValue
+            utilizationFee *= testValue
+            onDemandFee *= testValue
         
         newInstance = VMClass(area, provider, instanceType, contract, paymentOption, reservationFee, utilizationFee, onDemandFee, hostReq, memoryReq, storageReq, networkReq, energyConsumption)
         instanceData.append(newInstance)
@@ -107,6 +112,12 @@ def getRouterBandwidthPrice(networkTopology) :
             initialResFee = float(router[4])
             utilizationFee = float(router[5])
             onDemandFee = float(router[6])
+            '''
+            if routerArea == 'us' :
+                initialResFee *= testValue
+                utilizationFee *= testValue
+                onDemandFee *= testValue
+            '''
             
             newRouterData = RouterClass(routerIndex, routerArea, contractLength, paymentOption, initialResFee, utilizationFee, onDemandFee, routerEdges)
             routerData.append(newRouterData)
