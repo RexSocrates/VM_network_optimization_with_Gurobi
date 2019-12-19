@@ -446,7 +446,7 @@ for testValue in testValueList :
 	# Power Usage Effectiveness
 	valueOfPUE = 1.58
 	chargingDischargingEffeciency = 0.88
-	energyPriceDict = readEnergyPricingFile(testValue)
+	energyPriceDict = readEnergyPricingFile()
 	sortedEnergyPrice = sortEnergyPrice(energyPriceDict, timeLength)
 	
 	# the list used to calculate the VM energy consumption
