@@ -4,13 +4,13 @@ from subFunctions import *
 from gurobipy import *
 import random
 
-testValueList = [1]
-testValueList.extend([val for val in range(5, 151, 5)])
+testValueList = [val for val in range(75, 151, 5)]
+# testValueList.extend([val for val in range(5, 151, 5)])
 # testValueList.reverse()
 
 for testValue in testValueList :
     # get instance data from csv file, get get the lists of vm types and cloud providers from instance data
-	instanceData = getVirtualResource()
+	instanceData = getVirtualResource(testValue)
 	vmDataConfiguration = getVmDataConfiguration(instanceData)
 	providerList = vmDataConfiguration['providerList']
 	providerAreaDict = getProviderAreaDict(instanceData)
@@ -446,7 +446,7 @@ for testValue in testValueList :
 	# Power Usage Effectiveness
 	valueOfPUE = 1.58
 	chargingDischargingEffeciency = 0.88
-	energyPriceDict = readEnergyPricingFile(testValue)
+	energyPriceDict = readEnergyPricingFile()
 	sortedEnergyPrice = sortEnergyPrice(energyPriceDict, timeLength)
 	
 	# the list used to calculate the VM energy consumption
