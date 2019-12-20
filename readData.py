@@ -125,7 +125,7 @@ def getRouterBandwidthPrice(networkTopology) :
     return routerData
 
 # read energy pricing data
-def readEnergyPricingFile() :
+def readEnergyPricingFile(testValue) :
     areaList = ['us', 'ap', 'eu']
     dataframe = pd.read_csv('goldenSample_energyPrice.csv')
     
@@ -133,10 +133,10 @@ def readEnergyPricingFile() :
     for areaIndex in range(0, len(areaList)) :
         area = areaList[areaIndex]
         areaPrice = dataframe[area]
-        '''
+        
         if area == 'us' :
             areaPrice *= testValue
-        '''
+        
         
         areaPriceList = []
         for item in areaPrice :

@@ -5,7 +5,7 @@ from gurobipy import *
 import random
 
 testValueList = [1]
-testValueList.extend([val for val in range(5, 71, 5)])
+testValueList.extend([val for val in range(5, 151, 5)])
 # testValueList.reverse()
 
 for testValue in testValueList :
@@ -24,7 +24,7 @@ for testValue in testValueList :
 	model.setParam(GRB.Param.LogFile, 'log.txt')
 	# set the stopping criteria for gurobi optimizer, which is the gap less than 0.01
 	# model.setParam(GRB.Param.MIPGapAbs, 0.02)
-	model.setParam(GRB.Param.MIPGap, 0.00019)
+	# model.setParam(GRB.Param.MIPGap, 0.00019)
 	
 	timeLength = 20
 	numOfUsers = len(networkTopology['user'])
@@ -446,7 +446,7 @@ for testValue in testValueList :
 	# Power Usage Effectiveness
 	valueOfPUE = 1.58
 	chargingDischargingEffeciency = 0.88
-	energyPriceDict = readEnergyPricingFile()
+	energyPriceDict = readEnergyPricingFile(testValue)
 	sortedEnergyPrice = sortEnergyPrice(energyPriceDict, timeLength)
 	
 	# the list used to calculate the VM energy consumption
