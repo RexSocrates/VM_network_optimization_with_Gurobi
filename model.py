@@ -4,8 +4,8 @@ from subFunctions import *
 from gurobipy import *
 import random
 
-testValueList = [val for val in range(75, 151, 5)]
-# testValueList.extend([val for val in range(5, 151, 5)])
+testValueList = [val for val in range(90, 151, 5)]
+# testValueList.extend([val for val in range(5, 86, 5)])
 # testValueList.reverse()
 
 for testValue in testValueList :
@@ -23,7 +23,7 @@ for testValue in testValueList :
 	# log file of gurobi optimizer
 	model.setParam(GRB.Param.LogFile, 'log.txt')
 	# set the stopping criteria for gurobi optimizer, which is the gap less than 0.01
-	# model.setParam(GRB.Param.MIPGapAbs, 0.02)
+	model.setParam(GRB.Param.MIPGapAbs, 0.02)
 	# model.setParam(GRB.Param.MIPGap, 0.00019)
 	
 	timeLength = 20
@@ -1755,6 +1755,8 @@ for testValue in testValueList :
 	print("Objective function value : ", modelTotalCost)
 	modelRuntime = model.Runtime
 	print('Gurobi run time : ', str(modelRuntime) + ' (s)')
+	mipGap = model.MIPGap
+	# print('Final MIP gap value : ', model.MIPGap)
 	
 	resultColumn = ['Variable Name', 'Value']
 	resultData = []
@@ -1765,6 +1767,7 @@ for testValue in testValueList :
 	    resultData.append([varName, varValue])
 	resultData.append(['Cost', modelTotalCost])
 	resultData.append(['Runtime', modelRuntime])
+	resultData.append(['MIPGap', mipGap])
 	
 	writeModelResult('modelResult_' + str(testValue) + '.csv', resultColumn, resultData)
 	# print(GRB.OPTIMAL)
