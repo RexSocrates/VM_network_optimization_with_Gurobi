@@ -1797,7 +1797,7 @@ def solveModel(timeLength, fixedVarDict, optimizedVarDict, relaxedVarDict) :
         
     except GurobiError as e :
         gurobiErr = True
-        print('Error code {errorCode} : {des}'.format(errorCode=e.errno, des=str(e)))
+        print('Gurobi Error')
         for v in model.getVars() :
             varName = v.varName
             varValue = v.x
@@ -1820,6 +1820,6 @@ def solveModel(timeLength, fixedVarDict, optimizedVarDict, relaxedVarDict) :
 
         resultDataDict['Cost'] = objValue
         resultDataDict['Runtime'] = modelRuntime
-        resultDataDictp['MIPGap'] = modelGap
+        resultDataDict['MIPGap'] = modelGap
 
         return resultDataDict
