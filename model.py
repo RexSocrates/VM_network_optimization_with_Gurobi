@@ -1297,8 +1297,8 @@ try :
 	'''
 	
 	# Upfront budget
-	upfrontBudget = 150
-	monthlyPaymentBudget = 150
+	upfrontBudget = 10
+	monthlyPaymentBudget = 10
 	
 	# constraint 28 : the initial reservation budget calculation of each user at each time period
 	# constraint 29 : the resource utilization budget calculation of each user at each time period
@@ -1788,9 +1788,9 @@ finally :
 	
 	if gurobiErr == False :
 		for v in model.getVars() :
-	    	varName = v.varName
-	    	varValue = v.x
-	    	resultData.append([varName, varValue])
+			varName = v.varName
+			varValue = v.x
+			resultData.append([varName, varValue])
 	resultData.append(['Cost', modelTotalCost])
 	resultData.append(['Runtime', modelRuntime])
 	resultData.append(['MIPGap', modelMipGap])
