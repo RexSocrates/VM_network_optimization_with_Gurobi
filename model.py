@@ -4,8 +4,8 @@ from subFunctions import *
 from gurobipy import *
 import random
 
-testValueList = [val for val in range(90, 151, 5)]
-# testValueList.extend([val for val in range(5, 86, 5)])
+testValueList = [1]
+testValueList.extend([val for val in range(5, 81, 5)])
 # testValueList.reverse()
 
 for testValue in testValueList :
