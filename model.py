@@ -4,8 +4,8 @@ from subFunctions import *
 from gurobipy import *
 import random
 
-testValueList = [1]
-testValueList.extend([val for val in range(5, 81, 5)])
+testValueList = [val for val in range(55, 81, 5)]
+# testValueList.extend([val for val in range(5, 81, 5)])
 # testValueList.reverse()
 
 for testValue in testValueList :
@@ -24,8 +24,8 @@ for testValue in testValueList :
 		# log file of gurobi optimizer
 		model.setParam(GRB.Param.LogFile, 'log.txt')
 		# set the stopping criteria for gurobi optimizer, which is the gap less than 0.01
-		model.setParam(GRB.Param.MIPGapAbs, 0.02)
-		# model.setParam(GRB.Param.MIPGap, 0.00019)
+		# model.setParam(GRB.Param.MIPGapAbs, 0.02)
+		model.setParam(GRB.Param.MIPGap, 0.00019)
 		
 		timeLength = 20
 		numOfUsers = len(networkTopology['user'])
