@@ -119,7 +119,7 @@ try :
 		vmOnDemandDecVar.append(providerVmDecVarDict_onDemand)
 
 	# sort the instance data according to provider, vm type, vm contract and vm payment option for calculating the cost of using VM
-	sortedVmList = sortVM(instanceData, providerList, vmTypeList, vmContractLengthList, vmPaymentList)
+	sortedVmDict = sortVM(instanceData, providerList, vmTypeList, vmContractLengthList, vmPaymentList)
 
 	# get storage and bandwidth price of each provider
 	storageAndBandPrice = getCostOfStorageAndBandwidth()
@@ -137,7 +137,7 @@ try :
 							vmDecVar_res = vmResDecVar[timeStage][str(provider)][str(userIndex)][str(vmType)][str(vmContractLength)][str(vmPayment)]
 							vmDecVar_uti = vmUtilizationDecVar[timeStage][str(provider)][str(userIndex)][str(vmType)][str(vmContractLength)][str(vmPayment)]
 
-							instance = sortedVmList[str(provider)][str(vmType)][str(vmContractLength)][str(vmPayment)]
+							instance = sortedVmDict[str(provider)][str(vmType)][str(vmContractLength)][str(vmPayment)]
 
 							vmResFee = instance.resFee
 							vmUtiFee = instance.utilizeFee
@@ -220,7 +220,7 @@ try :
 						turnedOnVMs = vmModel.addVar(vtype=GRB.CONTINUOUS, name='numOfTurnedOnVms' + decVarIndex)
 						turnedOffVMs = vmModel.addVar(vtype=GRB.CONTINUOUS, name='numOfTurnedOffVms' + decVarIndex)
 
-						vmData = sortedVmList[str(provider)][str(vmType)][str(vmContractLengthList[0][str(vmPaymentList[0])])]
+						vmData = sortedVmDict[str(provider)][str(vmType)][str(vmContractLengthList[0][str(vmPaymentList[0])])]
 						energyConsumptionOfVM = vmData.energyConsumption
 						changeStateEnergyConsumptionOfVM = energyConsumptionOfVM * changeStateEnergyPercentage
 
@@ -254,6 +254,25 @@ try :
 		greenEnergyDecVarList.append(provider_greenEnergyDecVarDict)
 
 	print('VM energy cost decision variables complete')
+
+	# Upfront payment budget and monthly payment budget
+	vmUpfrontPaymentCostDecVarList = []
+	vmMonthlyPaymentCostDecVarList = []
+	for timeStage in range(0, timeLength) :
+		userUpfrontPaymentCostDecVarDict = dict()
+		userMonthlyPaymentCostDecVarDict = dict()
+		for userIndex in range(0, numOfUsers) :
+			decVarIndex = '_t_' + str(timeStage) + '_u_' + str(userIndex)
+			vmUpfrontPaymentCostDecVar = vmModel.addVar(vtype=GRB.CONTINUOUS, name='UC_VM' + decVarIndex)
+			vmMonthlyPaymentCostDecVar = vmModel.addVar(vtype=GRB.CONTINUOUS, name='MC_VM' + decVarIndex)
+
+			userUpfrontPaymentCostDecVarDict[str(userIndex)] = vmUpfrontPaymentCostDecVar
+			userMonthlyPaymentCostDecVarDict[str(userIndex)] = vmMonthlyPaymentCostDecVar
+
+		vmUpfrontPaymentCostDecVarList.append(userUpfrontPaymentCostDecVarDict)
+		vmMonthlyPaymentCostDecVarList.append(userMonthlyPaymentCostDecVarDict)
+	print('VM upfront payment and monthly payment cost decision variables complete')
+
 
 	vmModel.update()
 
@@ -386,7 +405,7 @@ try :
 			vmNetworkReqList = []
 			# resources usage
 			for vmType in vmTypeList :
-				vm = sortedVmList[str(provider)][str(vmType)][str(vmContractLengthList[0])][str(vmPaymentList[0])]
+				vm = sortedVmDict[str(provider)][str(vmType)][str(vmContractLengthList[0])][str(vmPaymentList[0])]
 				vmCoreReq = vm.coreReq
 				vmStorageReq = vm.storageReq
 				vmNetworkReq = vm.networkReq
@@ -446,7 +465,56 @@ try :
 					vmModel.addConstr(vmDecVar_onDemand, GRB.GREATER_EQUAL, 0, name='c22_onDemand:' + constrIndex)
 	print('Contraint 22 complete')
 
-	
+	totalBudgetOfUpfrontPayment = 150
+	totalBudgetOfMonthlyPayment = 150
+
+	vmBudgetPercentage = 0.5
+
+	# constraint 28 : upfront payment and monthly payment budget
+	for timeStage in range(0, timeLength) :
+		for userIndex in range(0, numOfUsers) :
+			vmUpfrontPaymentCost = vmUpfrontPaymentCostDecVarList[timeStage][str(userIndex)]
+			vmMonthlyPaymentCost = vmMonthlyPaymentCostDecVarList[timeStage][str(userIndex)]
+
+			vmUpfrontPaymentParameterList = []
+			vmUpfrontPaymentDecVarList = []
+
+			vmMonthlyPaymentParameterList = []
+			vmMonthlyPaymentDecVarList = []
+
+			for provider in providerList :
+				for vmType in vmTypeList :
+					for vmContractLength in vmContractLengthList :
+						for vmPayment in vmPaymentList :
+							vm = sortedVmDict[str(provider)][str(vmType)][str(vmContractLength)][str(vmPayment)]
+							vmResFee = vm.resFee
+							vmDecVar_res = vmResDecVar[timeStage][str(provider)][str(userIndex)][str(vmType)][str(vmContractLength)][str(vmPayment)]
+
+							vmUpfrontPaymentParameterList.append(vmResFee)
+							vmUpfrontPaymentDecVarList.append(vmDecVar_res)
+
+							vmUtilizeFee = vm.utilizeFee
+							effectiveVmReservationList = effectiveVmResDecVarDict[str(provider)][str(userIndex)][str(vmType)][str(vmContractLength)][str(vmPayment)][timeStage]
+
+							vmMonthlyPaymentParameterList.append(vmUtilizeFee)
+							vmMonthlyPaymentDecVarList.append(quicksum(effectiveVmReservationList))
+
+			constrIndex = '_t_' + str(timeStage) + '_u_' + str(userIndex)
+			vmModel.addConstr(vmUpfrontPaymentCost, GRB.EQUAL, quicksum([vmUpfrontPaymentParameterList[itemIndex] * vmUpfrontPaymentDecVarList[itemIndex] for itemIndex in range(0, len(vmUpfrontPaymentDecVarList))]), name='c28_VM:' + constrIndex)
+			vmModel.addConstr(vmMonthlyPaymentCost, GRB.EQUAL, quicksum([vmMonthlyPaymentParameterList[itemIndex] * vmMonthlyPaymentDecVarList[itemIndex] for itemIndex in range(0, len(vmMonthlyPaymentDecVarList))]), name='c29_VM:' + constrIndex)
+	print('Constraint 28, 29 complete')
+
+	# constraint 30, 31
+	for timeStage in range(0, timeLength) :
+		for userIndex in range(0, numOfUsers) :
+			vmUpfrontPaymentCost = vmUpfrontPaymentCostDecVarList[timeStage][str(userIndex)]
+			vmMonthlyPaymentCost = vmMonthlyPaymentCostDecVarList[timeStage][str(userIndex)]
+
+			constrIndex = '_t_' + str(timeStage) + '_u_' + str(userIndex)
+
+			vmModel.addConstr(vmUpfrontPaymentCost, GRB.LESS_EQUAL, totalBudgetOfUpfrontPayment * vmBudgetPercentage, name='c30_VM:' + constrIndex)
+			vmModel.addConstr(vmMonthlyPaymentCost, GRB.LESS_EQUAL, totalBudgetOfMonthlyPayment * vmBudgetPercentage, name='c31_VM:' + constrIndex)
+	print('Constraint 30, 31 VM complete')
 
 
 
