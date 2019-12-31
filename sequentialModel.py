@@ -5,7 +5,7 @@ from gurobipy import *
 import random
 
 gurobiErr = False
-resultData = []
+vmModelResultData = []
 
 try :
 	timeLength = 50
@@ -193,6 +193,16 @@ try :
 	turnedOffVMsDecVarList = []
 	# the usage of green energy
 	greenEnergyDecVarList = []
+	# the energy that solar panels supply to DC
+	solarEnergyToDcDecVarList = []
+	# the energy that solar panels charge to the batteries
+	solarEnergyToBatteryDecVarList = []
+	# the energy that the batteries supply to DC
+	batteryEnergyToDcDecVarList = []
+	# the energy level of batteries at the beginning of time periods
+	batteryEnergyLevelDecVarList_beg = []
+	# the energy level of batteries at the end of time periods
+	batteryEnergyLevelDecVarList_end = []
 
 	for timeStage in range(0, timeLength) :
 		provider_energyConsumptionOfActiveVMsDecVarDict = dict()
@@ -200,6 +210,11 @@ try :
 		provider_turnedOnVMsDecVarDict = dict()
 		provider_turnedOffVMsDecVarDict = dict()
 		provider_greenEnergyDecVarDict = dict()
+		provider_solarEnergyToDcDecVarDict = dict()
+		provider_solarEnergyToBatteryDecVarDict = dict()
+		provider_batteryEnergyToDcDecVarDict = dict()
+		provider_batteryEnergyLevelDecVarDict_beg = dict()
+		provider_batteryEnergyLevelDecVarDict_end = dict()
 		for area in providerAreaDict :
 			areaProviderList = providerAreaDict[area]
 			for provider in areaProviderList :
@@ -245,13 +260,29 @@ try :
 
 				tpDecVarIndex = '_t_' + str(timeStage) + '_p_' + str(provider)
 				greenEnergyUsage = vmModel.addVar(vtype=GRB.CONTINUOUS, name='greenEnergy' + tpDecVarIndex)
+				solarEnergyToDc = vmModel.addVar(vtype=GRB.CONTINUOUS, name='SED' + tpDecVarIndex)
+				solarEnergyToBattery = vmModel.addVar(vtype=GRB.CONTINUOUS, name='SEB' + tpDecVarIndex)
+				batteryEnergyToDc = vmModel.addVar(vtype=GRB.CONTINUOUS, name='BED' + tpDecVarIndex)
+				batteryEnergyLevelDecVar_beg = vmModel.addVar(vtype=GRB.CONTINUOUS, name='BatteryEnergyLevel_beg' + tpDecVarIndex)
+				batteryEnergyLevelDecVar_end = vmModel.addVar(vtype=GRB.CONTINUOUS, name='BatteryEnergyLevel_end' + tpDecVarIndex)
+
 				provider_greenEnergyDecVarDict[str(provider)] = greenEnergyUsage
+				provider_solarEnergyToDcDecVarDict[str(provider)] = solarEnergyToDc
+				provider_solarEnergyToBatteryDecVarDict[str(provider)] = solarEnergyToBattery
+				provider_batteryEnergyToDcDecVarDict[str(provider)] = batteryEnergyToDc
+				provider_batteryEnergyLevelDecVarDict_beg[str(provider)] = batteryEnergyLevelDecVar_beg
+				provider_batteryEnergyLevelDecVarDict_end[str(provider)] = batteryEnergyLevelDecVar_end
 
 		energyConsumptionOfActiveVMsDecVarList.append(provider_energyConsumptionOfActiveVMsDecVarDict)
 		activeVMsDecVarList.append(provider_activeVMsDecVarDict)
 		turnedOnVMsDecVarList.append(provider_turnedOnVMsDecVarDict)
 		turnedOffVMsDecVarList.append(provider_turnedOffVMsDecVarDict)
 		greenEnergyDecVarList.append(provider_greenEnergyDecVarDict)
+		solarEnergyToDcDecVarList.append(provider_solarEnergyToDcDecVarDict)
+		solarEnergyToBatteryDecVarList.append(provider_solarEnergyToBatteryDecVarDict)
+		batteryEnergyToDcDecVarList.append(provider_batteryEnergyToDcDecVarDict)
+		batteryEnergyLevelDecVarList_beg.append(provider_batteryEnergyLevelDecVarDict_beg)
+		batteryEnergyLevelDecVarList_end.append(provider_batteryEnergyLevelDecVarDict_end)
 
 	print('VM energy cost decision variables complete')
 
@@ -515,6 +546,146 @@ try :
 			vmModel.addConstr(vmUpfrontPaymentCost, GRB.LESS_EQUAL, totalBudgetOfUpfrontPayment * vmBudgetPercentage, name='c30_VM:' + constrIndex)
 			vmModel.addConstr(vmMonthlyPaymentCost, GRB.LESS_EQUAL, totalBudgetOfMonthlyPayment * vmBudgetPercentage, name='c31_VM:' + constrIndex)
 	print('Constraint 30, 31 VM complete')
+
+	# constraint 32 : the usage of green energy
+	for timeStage in range(0, timeLength) :
+		for provider in providerList :
+			greenEnergyUsage = greenEnergyDecVarList[timeStage][str(provider)]
+
+			computingEquipmentsEnergyConsumptionDecVarList = []
+			computingEquipmentsEnergyConsumptionParameterList = []
+
+			for userIndex in range(0, numOfUsers) :
+				for vmType in vmTypeList :
+					energyConsumptionOfActiveVMs = energyConsumptionOfActiveVMsDecVarList[timeStage][str(provider)][str(userIndex)][str(vmType)]
+					numOfTurnedOnVms = turnedOnVMsDecVarList[timeStage][str(provider)][str(userIndex)][str(vmType)]
+					numOfTurnedOffVms = turnedOffVMsDecVarList[timeStage][str(provider)][str(userIndex)][str(vmType)]
+
+					computingEquipmentsEnergyConsumptionDecVarList.append(energyConsumptionOfActiveVMs)
+					computingEquipmentsEnergyConsumptionParameterList.append(1)
+
+					computingEquipmentsEnergyConsumptionDecVarList.append(numOfTurnedOnVms)
+					computingEquipmentsEnergyConsumptionParameterList.append(vmChangeStateEnergyConsumptionDict[str(vmType)])
+
+					computingEquipmentsEnergyConsumptionDecVarList.append(numOfTurnedOffVms)
+					computingEquipmentsEnergyConsumptionParameterList.append(vmChangeStateEnergyConsumptionDict[str(vmType)])
+
+			constrIndex = '_t_' + str(timeStage) + '_p_' + str(provider)
+			vmModel.addConstr(greenEnergyUsage, GRB.LESS_EQUAL, quicksum([computingEquipmentsEnergyConsumptionParameterList[itemIndex] * computingEquipmentsEnergyConsumptionDecVarList[itemIndex] for itemIndex in range(0, len(computingEquipmentsEnergyConsumptionDecVarList))]), name='c32:' + constrIndex)
+	print('Constraint 32 complete')
+
+	# the green energy usage limit of each provider at each time period
+	greenEnergyUsageLimitList = getGreenEnergyUsageLimit(timeLength, providerList)
+	# the charging and discharging effeciency of the betteries
+	chargingDischargingEffeciency = 0.88
+	# constraint 33, 34 : the calculation of green energy usage and the limit of energy that is generated by solar panels
+	for timeStage in range(0, timeLength) :
+		for provider in providerList :
+			greenEnergyUsage = greenEnergyDecVarList[timeStage][str(provider)]
+			solarEnergyToDc = solarEnergyToDcDecVarList[timeStage][str(provider)]
+			solarEnergyToBattery = solarEnergyToBatteryDecVarList[timeStage][str(provider)]
+			batteryEnergyToDc = batteryEnergyToDcDecVarList[timeStage][str(provider)]
+			greenEnergyUsageLimit = greenEnergyUsageLimitList[timeStage][str(provider)]
+
+			constrIndex = '_t_' + str(timeStage) + '_p_' + str(provider)
+
+			vmModel.addConstr(greenEnergyUsage, GRB.EQUAL, solarEnergyToDc + chargingDischargingEffeciency * batteryEnergyToDc, name='c33:' + constrIndex)
+			vmModel.addConstr(solarEnergyToBattery + solarEnergyToDc, GRB.LESS_EQUAL, greenEnergyUsageLimit, name='c34:' + constrIndex)
+	print('Constraint 33, 34 complete')
+
+	# constraint 35 : green energy usage limit
+	for provider in providerList :
+		totalGreenEnergyUsageList = []
+		totalGreenEnergyUsageLimitList = []
+		for timeStage in range(0, timeLength) :
+			greenEnergyUsage = greenEnergyDecVarList[timeStage][str(provider)]
+			greenEnergyUsageLimit = greenEnergyUsageLimitList[timeStage][str(provider)]
+			
+			totalGreenEnergyUsageList.append(greenEnergyUsage)
+			totalGreenEnergyUsageLimitList.append(greenEnergyUsageLimit)
+
+		constrIndex = '_p_' + str(provider)
+		vmModel.addConstr(quicksum(totalGreenEnergyUsageList), GRB.LESS_EQUAL, quicksum(totalGreenEnergyUsageLimitList), name='c35:' + constrIndex)
+	print('Constraint 35 complete')
+
+	# constraint 36 : the battery energy level calculation
+	for timeStage in range(1, timeLength) :
+		for provider in providerList :
+			currentTimePeriodBatteryEnergyLevelDecVar_beg = batteryEnergyLevelDecVarList_beg[timeStage][str(provider)]
+			previousTimePeriodBatteryEnergyLevelDecVar_end = batteryEnergyLevelDecVarList_end[timeStage - 1][str(provider)]
+			solarEnergyToBattery = solarEnergyToBatteryDecVarList[timeStage][str(provider)]
+
+			constrIndex = '_t_' + str(timeStage) + '_p_' + str(provider)
+
+			vmModel.addConstr(currentTimePeriodBatteryEnergyLevelDecVar_beg, GRB.EQUAL, previousTimePeriodBatteryEnergyLevelDecVar_end + chargingDischargingEffeciency * solarEnergyToBattery, name='c36:' + constrIndex)
+	print('Constraint 36 complete')
+
+	# constraint 37, 38, 39, 40 : the calculation of the energy
+	batteryEnergyCapacity = 1486
+	chargingDischargingLimit = 73 * 5
+	for timeStage in range(0, timeLength) :
+		for provider in providerList :
+			batteryEnergyToDc = batteryEnergyToDcDecVarList[timeStage][str(provider)]
+			solarEnergyToBattery = solarEnergyToBatteryDecVarList[timeStage][str(provider)]
+			batteryEnergyLevelDecVar_beg = batteryEnergyLevelDecVarList_beg[timeStage][str(provider)]
+			batteryEnergyLevelDecVar_end = batteryEnergyLevelDecVarList_end[timeStage][str(provider)]
+
+			constrIndex = '_t_' + str(timeStage) + '_p_' + str(provider)
+
+			vmModel.addConstr(batteryEnergyToDc, GRB.EQUAL, batteryEnergyLevelDecVar_beg - batteryEnergyLevelDecVar_end, name='c37:' + constrIndex)
+			vmModel.addConstr(batteryEnergyToDc, GRB.LESS_EQUAL, batteryEnergyLevelDecVar_beg, name='c38:' + constrIndex)
+			vmModel.addConstr(batteryEnergyLevelDecVar_beg, GRB.LESS_EQUAL, batteryEnergyCapacity, name='c39:' + constrIndex)
+			vmModel.addConstr(batteryEnergyLevelDecVar_end, GRB.LESS_EQUAL, batteryEnergyCapacity, name='c40:' + constrIndex)
+			vmModel.addConstr(solarEnergyToBattery, GRB.LESS_EQUAL, chargingDischargingLimit, name='c41:' + constrIndex)
+			vmModel.addConstr(batteryEnergyToDc, GRB.LESS_EQUAL, chargingDischargingLimit, name='c42:' + constrIndex)
+	print('Constraint 37, 38, 39, 40, 41, 42 complete')
+
+	# constraint 43, 44, 45
+	for provider in providerList :
+		batteryEnergyToDc = batteryEnergyToDcDecVarList[0][str(provider)]
+		batteryEnergyLevelDecVar_beg = batteryEnergyLevelDecVarList_beg[0][str(provider)]
+		batteryEnergyLevelDecVar_end = batteryEnergyLevelDecVarList_end[0][str(provider)]
+
+		constrIndex = '_p_' + str(provider)
+
+		vmModel.addConstr(batteryEnergyToDc, GRB.EQUAL, 0, name='c43:' + constrIndex)
+		vmModel.addConstr(batteryEnergyLevelDecVar_beg, GRB.EQUAL, 0, name='c44:' + constrIndex)
+		vmModel.addConstr(batteryEnergyLevelDecVar_end, GRB.EQUAL, 0, name='c45:' + constrIndex)
+	print('Constraint 43, 44, 45 complete')
+
+	vmModel.write("vmModel.lp")
+
+	model.optimize()
+except GurobiError as e :
+	gurobiErr = True
+	print('Gurobi error')
+	for v in vmModel.getVars() :
+		varName = v.varName
+		varValue = v.x
+		vmModelResultData.append([varName, varValue])
+finally :
+	vmModelTotalCost = vmModel.ObjVal
+	print("VM model Objective function value : ", vmModelTotalCost)
+	vmModelRuntime = vmModel.Runtime
+	print('Gurobi run time : ', vmModelRuntime)
+	vmModelMipGap = vmModel.MIPGap
+
+	if gurobiErr == False :
+		for v in vmModel.getVars() :
+			varName = v.varName
+			varValue = v.x
+			vmModelResultData.append([varName, varValue])
+	vmModelResultData.append(['Cost', vmModelTotalCost])
+	vmModelResultData.append(['Runtime', vmModelRuntime])
+	vmModelResultData.append(['MIPGap', vmModelMipGap])
+
+	resultColumn = ['Variable Name', 'Value']
+
+	writeModelResult('modelResult.csv', resultColumn, vmModelResultData)
+
+
+
+
 
 
 
