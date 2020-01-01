@@ -683,16 +683,201 @@ finally :
 
 	writeModelResult('modelResult.csv', resultColumn, vmModelResultData)
 
+# Bandwidth
 
+# create a model for VM placement
+bandModel = Model('Bandwidth_placement_model')
 
+# model parameters : log file, stopping criteria
+# log file for VM optimization model
+bandModel.setParam(GRB.Param.LogFile, 'bandwidth_log.txt')
+bandModel.setParam(GRB.Param.MIPGap, 0.00019)
 
+# get router and bandwidth data
+numOfRouters = len(networkTopology['router'])
+routerData = getRouterBandwidthPrice(networkTopology)
+routerDataConfig = getRouterDataConfiguration(routerData)
+bandContractList = routerDataConfig['contractList']
+bandPaymentList = routerDataConfig['payment']
+sortedRouter = sortRouter(routerData, numOfRouters, bandContractList, bandPaymentList)
+routerList = getRouterList(routerData)
 
+# Bandwidth cost decision variables
+bandResDecVarList = []
+bandUtilizationDecVarList = []
+bandOnDemandDecVarList = []
 
+# a dictionary recording the effective bandwidth reservation
+effectiveBandDecVarDict = dict()
 
+# initialize the dictionary of effective bandwidth reservation
+for userIndex in range(0, numOfUsers) :
+	routerEffectiveBandDecVarDict = dict()
+	for routerIndex in range(0, numOfRouters) :
+		bandContractEffectiveBandDecVarDict = dict()
+		for bandContract in bandContractList :
+			bandPaymentEffectiveBandDecVarDict = dict()
+			for bandPayment in bandPaymentList :
+				effectiveBandwidthReservationList = [[] for _ in range(0, timeLength)]
+				bandPaymentEffectiveBandDecVarDict[str(bandPayment)] = effectiveBandwidthReservationList
+			bandContractEffectiveBandDecVarDict[str(bandContract)] = bandPaymentEffectiveBandDecVarDict
+		routerEffectiveBandDecVarDict[str(routerIndex)] = bandContractEffectiveBandDecVarDict
+	effectiveBandDecVarDict[str(userIndex)] = routerEffectiveBandDecVarDict
 
+bandwidthCostParameterList = []
+bandwidthCostDecVarList = []
 
-					
+# create bandwidth cost decision variables
+for timeStage in range(0, timeLength) :
+	userBandDecVarDict_res = dict()
+	userBandDecVarDict_uti = dict()
+	userBandDecVarDict_onDemand = dict()
+	for userIndex in range(0, numOfUsers) :
+		routerBandDecVarDict_res = dict()
+		routerBandDecVarDict_uti = dict()
+		routerBandDecVarDict_onDemand = dict()
+		for routerIndex in range(0, numOfRouters) :
+			contractBandDecVarDict_res = dict()
+			contractBandDecVarDict_uti = dict()
 
+			bandwidthOnDemandFee = 0
+
+			for bandContract in bandContractList :
+				paymentBandDecVarDict_res = dict()
+				paymentBandDecVarDict_uti = dict()
+				for bandPayment in bandPaymentList :
+					decVarIndex = str(timeStage) + 'u_' + str(userIndex) + 'r_' + str(routerIndex) + 'l_' + str(bandContract) + 'm_' + str(bandPayment)
+
+					bandDecVar_res = bandModel.addVar(vtype=GRB.CONTINUOUS, name='bandRes_t_' + decVarIndex)
+					bandDecVar_uti = bandModel.addVar(vtype=GRB.CONTINUOUS, name='bandUti_t_' + decVarIndex)
+
+					paymentBandDecVarDict_res[str(bandPayment)] = bandDecVar_res
+					paymentBandDecVarDict_uti[str(bandPayment)] = bandDecVar_uti
+
+					# add the decision variables to effective bandwidth reservation list
+					effectiveBandwidthReservationList = effectiveBandDecVarDict[str(userIndex)][str(routerIndex)][str(bandContract)][str(bandPayment)]
+
+					for effectiveBandwidthReservationTimeStage in range(timeStage, min(timeLength, (timeStage + bandContract))) :
+						effectiveBandwidthReservationList[effectiveBandwidthReservationTimeStage].append(bandDecVar_res)
+
+					# add decision variables and parameters to bandwidth cost list
+					router = sortedRouter[str(routerIndex)][str(bandContract)][str(bandPayment)]
+					bandwidthResFee = router.reservationFee
+					bandwidthUtiFee = router.utilizationFee
+					bandwidthOnDemandFee = onDemandFee
+
+					bandwidthCostParameterList.append(bandwidthResFee)
+					bandwidthCostDecVarList.append(bandDecVar_res)
+
+					bandwidthCostParameterList.append(bandwidthUtiFee)
+					bandwidthCostDecVarList.append(quicksum(effectiveBandwidthReservationList[timeStage]))
+
+				contractBandDecVarDict_res[str(bandContract)] = paymentBandDecVarDict_res
+				contractBandDecVarDict_uti[str(bandContract)] = paymentBandDecVarDict_uti
+
+			decVarIndex = 't_' + str(timeStage) + 'u_' + str(userIndex) + 'r_' + str(routerIndex)
+			bandDecVar_onDemand = bandModel.addVar(vtype=GRB.CONTINUOUS, name = 'bandOnDemand_' + decVarIndex)
+
+			bandwidthCostParameterList.append(bandwidthOnDemandFee)
+			bandwidthCostDecVarList.append(bandDecVar_onDemand)
+
+			routerBandDecVarDict_res[str(routerIndex)] = contractBandDecVarDict_res
+			routerBandDecVarDict_uti[str(routerIndex)] = contractBandDecVarDict_uti
+			routerBandDecVarDict_onDemand[str(routerIndex)] = bandDecVar_onDemand
+
+		userBandDecVarDict_res[str(userIndex)] = routerBandDecVarDict_res
+		userBandDecVarDict_uti[str(userIndex)] = routerBandDecVarDict_uti
+		userBandDecVarDict_onDemand[str(userIndex)] = routerBandDecVarDict_onDemand
+
+	bandResDecVarList.append(userBandDecVarDict_res)
+	bandUtilizationDecVarList.append(userBandDecVarDict_uti)
+	bandOnDemandDecVarList.append(userBandDecVarDict_onDemand)
+
+# Network energy
+routerAreaDict = getRouterAreaDict(routerList)
+# a fully loaded router consume 3.84 KW
+fullyLoadedRouterEnergyConsumption = 3840
+idleRouterEnergyConsumption = 1000
+# assume that switch the state of router is the 5% of fully loaded energy consumption
+routerChangeStateEnergyConsumptionPercentage = 0.05
+routerChangeStateEnergyConsumption = fullyLoadedRouterEnergyConsumption * routerChangeStateEnergyConsumptionPercentage
+# assume that the capacity of each router is 1,000 Gbps
+routerCapacity = 100000.0
+
+# router energy consumption
+routerEnergyConsumptionDecVarList = []
+# the decision variables indicate the status of a router
+routerStatusDecVarList = []
+# the decision variables indicate turning on a router if the value is 1
+routerOnDecVarList = []
+# the decision variables indicate turning off a router if the value is 1
+routerOffDecVarList = []
+# bandwidth usage of each router at each time period
+routerBandwidthUsageDecVarList = []
+
+# equation 10 : the cost of network energy consumption
+for timeStage in range(0, timeLength) :
+	routerEnergyConsumptionDecVarDict = dict()
+	routerStatusDecVarDict = dict()
+	routerOnDecVarDict = dict()
+	routerOffDecVarDict = dict()
+	routerBandwidthUsageDecVarDict = dict()
+	for area in routerAreaDict :
+		for routerIndex in routerAreaDict[area] :
+			decVarIndex = 't_' + str(timeStage) + 'r_' + str(routerIndex)
+			
+			decVar_routerEnergyConsumption = bandModel.addVar(vtype=GRB.CONTINUOUS, name='routerEnergyConsumption_' + decVarIndex)
+			decVar_routerStatus = bandModel.addVar(vtype=GRB.BINARY, name='RS_' + decVarIndex)
+			decVar_routerOn = bandModel.addVar(vtype=GRB.BINARY, name='RO_' + decVarIndex)
+			decVar_routerOff = bandModel.addVar(vtype=GRB.BINARY, name='RF_' + decVarIndex)
+			decVar_routerBandwidthUsage = bandModel.addVar(vtype=GRB.CONTINUOUS, name='routerBandUsage_' + decVarIndex)
+
+			routerEnergyConsumptionDecVarDict[str(routerIndex)] = decVar_routerEnergyConsumption
+			routerStatusDecVarDict[str(routerIndex)] = decVar_routerStatus
+			routerOnDecVarDict[str(routerIndex)] = decVar_routerOn
+			routerOffDecVarDict[str(routerIndex)] = decVar_routerOff
+			routerBandwidthUsageDecVarDict[str(routerIndex)] = decVar_routerBandwidthUsage
+
+	routerEnergyConsumptionDecVarList.append(routerEnergyConsumptionDecVarDict)
+	routerStatusDecVarList.append(routerStatusDecVarDict)
+	routerOnDecVarList.append(routerOnDecVarDict)
+	routerOffDecVarList.append(routerOffDecVarDict)
+	routerBandwidthUsageDecVarList.append(routerBandwidthUsageDecVarDict)
+
+bandModel.update()
+
+bandModel.setObjective(quicksum([bandwidthCostParameterList[itemIndex] * bandwidthCostDecVarList[itemIndex] for itemIndex in range(0, len(bandwidthCostParameterList))]) + quicksum([sortedEnergyPrice[timeStage][str(area)] * quicksum([routerEnergyConsumptionDecVarList[timeStage][str(routerIndex)] + routerChangeStateEnergyConsumption * routerOnDecVarList[timeStage][str(routerIndex)] + routerChangeStateEnergyConsumption * routerOffDecVarList[timeStage][str(routerIndex)] for routerIndex in routerAreaDict[area]]) for timeStage in range(0, timeLength) for area in routerAreaDict]), GRB.MINIMIZE)
+
+# Bandwidth cost
+# quicksum([bandwidthCostParameterList[itemIndex] * bandwidthCostDecVarList[itemIndex] for itemIndex in range(0, len(bandwidthCostParameterList))])
+
+# Network energy
+# quicksum([sortedEnergyPrice[timeStage][str(area)] * quicksum([routerEnergyConsumptionDecVarList[timeStage][str(routerIndex)] + routerChangeStateEnergyConsumption * routerOnDecVarList[timeStage][str(routerIndex)] + routerChangeStateEnergyConsumption * routerOffDecVarList[timeStage][str(routerIndex)] for routerIndex in routerAreaDict[area]]) for timeStage in range(0, timeLength) for area in routerAreaDict])
+
+# constraint 11, 12 : router on / off indicators
+for timeStage in range(1, timeLength) :
+	for routerIndex in range(0, numOfRouters) :
+		decVar_routerOn = routerOnDecVarList[timeStage][routerIndex]
+		decVar_routerOff = routerOffDecVarList[timeStage][routerIndex]
+		decVar_routerStatus = routerStatusDecVarList[timeStage][routerIndex]
+		decVar_previousTimeStageRouterStatus = routerStatusDecVarList[timeStage - 1][routerIndex]
+
+		constrIndex = '_t_' + str(timeStage) + '_r_' + str(routerIndex)
+
+		bandModel.addConstr(decVar_routerOn, GRB.GREATER_EQUAL, decVar_routerStatus - decVar_previousTimeStageRouterStatus, name='c11:' + constrIndex)
+		bandModel.addConstr(decVar_routerOff, GRB.GREATER_EQUAL, decVar_previousTimeStageRouterStatus - decVar_routerStatus, name='c12:' + constrIndex)
+print('Constraint 11, 12 complete')
+
+# constraint 13 : the energy consumption of each router
+for timeStage in range(0, timeLength) :
+	for routerIndex in range(0, numOfRouters) :
+		decVar_routerEnergyConsumption = routerEnergyConsumptionDecVarList[timeStage][str(routerIndex)]
+		decVar_routerStatus = routerStatusDecVarList[timeStage][str(routerIndex)]
+		decVar_routerBandwidthUsage = routerBandwidthUsageDecVarList[timeStage][str(routerIndex)]
+
+		constrIndex = '_t_' + str(timeStage) + '_r_' + str(routerIndex)
+
+		bandModel.addConstr(decVar_routerEnergyConsumption, GRB.EQUAL, decVar_routerStatus * idleRouterEnergyConsumption + (decVar_routerBandwidthUsage / 2 * routerCapacity) * (fullyLoadedRouterEnergyConsumption - idleRouterEnergyConsumption), name='c13:' + constrIndex)
 
 
 
