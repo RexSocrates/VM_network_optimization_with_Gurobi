@@ -535,9 +535,9 @@ try :
 	            timeProviderStr = 't_' + str(timeStage) + 'p_' + str(provider)
 	            
 	            providerGreenEnergyUsage = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS, name='greenEnergyUsage_' + timeProviderStr)
-	            solarToDc = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS, name='solarToDc_' + timeProviderStr)
-	            solarToBattery = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS, name='solarToBattery_' + timeProviderStr)
-	            batteryToDc = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS, name='batteryToDc_' + timeProviderStr)
+	            solarToDc = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS, name='SED_' + timeProviderStr)
+	            solarToBattery = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS, name='SEB_' + timeProviderStr)
+	            batteryToDc = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS, name='BED_' + timeProviderStr)
 	            battegyEnergyLevel_beg = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS, name='batteryEnergyLevel_beg_' + timeProviderStr)
 	            batteryEnergyLevel_end = model.addVar(lb=0.0, vtype=GRB.CONTINUOUS, name='batteryEnergyLevel_end_' + timeProviderStr)
 	            
