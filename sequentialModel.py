@@ -844,6 +844,22 @@ for timeStage in range(0, timeLength) :
 	routerOffDecVarList.append(routerOffDecVarDict)
 	routerBandwidthUsageDecVarList.append(routerBandwidthUsageDecVarDict)
 
+# network edge flow decision variables
+edgeList = networkTopology['edges']
+
+edgeFlowDecVarList = []
+
+for timeStage in range(0, timeLength) :
+	edgeFlowDecVarDict = dict()
+	for edgeIndex in range(0, len(edgeList)) :
+		userEdgeFlowDecVarDict = dict()
+		for userIndex in range(0, numOfUsers) :
+			decVarIndex = 't_' + str(timeStage) + 'e_' + str(edgeIndex) + 'u_' + str(userIndex)
+			decVar_edgeFlow = bandModel.addVar(vtype=GRB.CONTINUOUS, name='flow_' + decVarIndex)
+			userEdgeFlowDecVarDict[str(userIndex)] = decVar_edgeFlow
+		edgeFlowDecVarDict[str(edgeIndex)] = userEdgeFlowDecVarDict
+	edgeFlowDecVarList.append(edgeFlowDecVarDict)
+
 bandModel.update()
 
 bandModel.setObjective(quicksum([bandwidthCostParameterList[itemIndex] * bandwidthCostDecVarList[itemIndex] for itemIndex in range(0, len(bandwidthCostParameterList))]) + quicksum([sortedEnergyPrice[timeStage][str(area)] * quicksum([routerEnergyConsumptionDecVarList[timeStage][str(routerIndex)] + routerChangeStateEnergyConsumption * routerOnDecVarList[timeStage][str(routerIndex)] + routerChangeStateEnergyConsumption * routerOffDecVarList[timeStage][str(routerIndex)] for routerIndex in routerAreaDict[area]]) for timeStage in range(0, timeLength) for area in routerAreaDict]), GRB.MINIMIZE)
@@ -868,9 +884,10 @@ for timeStage in range(1, timeLength) :
 		bandModel.addConstr(decVar_routerOff, GRB.GREATER_EQUAL, decVar_previousTimeStageRouterStatus - decVar_routerStatus, name='c12:' + constrIndex)
 print('Constraint 11, 12 complete')
 
-# constraint 13 : the energy consumption of each router
+# constraint 13, 14 : the energy consumption and bandwidth usage of each router
 for timeStage in range(0, timeLength) :
-	for routerIndex in range(0, numOfRouters) :
+	for router in routerList :
+		routerIndex = router.routerIndex
 		decVar_routerEnergyConsumption = routerEnergyConsumptionDecVarList[timeStage][str(routerIndex)]
 		decVar_routerStatus = routerStatusDecVarList[timeStage][str(routerIndex)]
 		decVar_routerBandwidthUsage = routerBandwidthUsageDecVarList[timeStage][str(routerIndex)]
@@ -878,6 +895,25 @@ for timeStage in range(0, timeLength) :
 		constrIndex = '_t_' + str(timeStage) + '_r_' + str(routerIndex)
 
 		bandModel.addConstr(decVar_routerEnergyConsumption, GRB.EQUAL, decVar_routerStatus * idleRouterEnergyConsumption + (decVar_routerBandwidthUsage / 2 * routerCapacity) * (fullyLoadedRouterEnergyConsumption - idleRouterEnergyConsumption), name='c13:' + constrIndex)
+
+		routerInFlowEdges = router.inFlowEdges
+		routerOutFlowEdges = router.outFlowEdges
+
+		routerInFlowEdgesDecVarList = []
+		routerOutFlowEdgesDecVarList = []
+
+		for edgeIndex in routerInFlowEdges :
+			for userIndex in range(0, numOfUsers) :
+				decVar_edgeFlow = edgeFlowDecVarList[timeStage][str(edgeIndex)][str(userIndex)]
+				routerInFlowEdgesDecVarList.append(decVar_edgeFlow)
+
+		for edgeIndex in routerOutFlowEdges :
+			for userIndex in range(0, numOfUsers) :
+				decVar_edgeFlow = edgeFlowDecVarList[timeStage][str(edgeIndex)][str(userIndex)]
+				routerOutFlowEdgesDecVarList.append(decVar_edgeFlow)
+
+		bandModel.addConstr(decVar_routerBandwidthUsage, GRB.EQUAL, quicksum(routerInFlowEdgesDecVarList) + quicksum(routerOutFlowEdgesDecVarList), name='c14:' + constrIndex)
+print('Constraint 14, 14 complete')
 
 
 
