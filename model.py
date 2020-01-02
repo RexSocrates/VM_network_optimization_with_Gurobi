@@ -4,14 +4,14 @@ from subFunctions import *
 from gurobipy import *
 import random
 
-testValueList = [val for val in range(55, 81, 5)]
-# testValueList.extend([val for val in range(5, 81, 5)])
+testValueList = [val for val in range(105, 151, 5)]
+# testValueList.extend([val for val in range(5, 151, 5)])
 # testValueList.reverse()
 
 for testValue in testValueList :
 	try :
     	# get instance data from csv file, get get the lists of vm types and cloud providers from instance data
-		instanceData = getVirtualResource(testValue)
+		instanceData = getVirtualResource()
 		vmDataConfiguration = getVmDataConfiguration(instanceData)
 		providerList = vmDataConfiguration['providerList']
 		providerAreaDict = getProviderAreaDict(instanceData)
@@ -25,7 +25,7 @@ for testValue in testValueList :
 		model.setParam(GRB.Param.LogFile, 'log.txt')
 		# set the stopping criteria for gurobi optimizer, which is the gap less than 0.01
 		# model.setParam(GRB.Param.MIPGapAbs, 0.02)
-		model.setParam(GRB.Param.MIPGap, 0.00019)
+		model.setParam(GRB.Param.MIPGap, 0.0004)
 		
 		timeLength = 20
 		numOfUsers = len(networkTopology['user'])
