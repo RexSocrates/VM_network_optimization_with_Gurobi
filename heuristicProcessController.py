@@ -34,59 +34,58 @@ vmPaymentList = vmDataConfiguration['vmPaymentList']
 numOfRouters = len(networkTopology['router'])
 
 for relaxAndFixDecomposition in [1, 2, 3] :
+    # relax and fix decomposition
+    # 1. Time Decomposition
+    # 2. Time and Stage Decomposition 1
+    # 3. Time and Stage Decomposition 2
+    # relaxAndFixDecomposition = 1
+    
+    subProblemVarList = []
+    
+    if relaxAndFixDecomposition == 1 :
+        # time decomposition
+        subProblemVarList = relaxAndFix_orderByTimePeriodsAscending(windowSize, overlap, timeLength, numOfUsers, providerList, vmTypeList, vmContractList, vmPaymentList, numOfRouters)
+    elif relaxAndFixDecomposition == 2 :
+        # time and stage decomposition 1
+        subProblemVarList = relaxAndFix_orderByTimePeriodsAndStagesAscending(windowSize, overlap, timeLength, numOfUsers, providerList, vmTypeList, vmContractList, vmPaymentList, numOfRouters)
+    elif relaxAndFixDecomposition == 3 :
+        # time and stage decomposition 2
+        subProblemVarList = relaxAndFix_orderByTimePeriodsAndStagesAscending_2(windowSize, overlap, timeLength, numOfUsers, providerList, vmTypeList, vmContractList, vmPaymentList, numOfRouters)
+    else :
+        print('No decomposition was choosed')
+    
+    fixedAndOptimizedVarDict = dict()
+    relaxAndFixAccumulatedRuntime = 0
+    
+    for subProblemIndex in range(0, len(subProblemVarList)) :
+        periodVarDict = subProblemVarList[subProblemIndex]
+        currentFixedVarDict = periodVarDict['fix']
+        
+        # update the values of fixed decision variables
+        for key in currentFixedVarDict :
+            currentFixedVarDict[key] = fixedAndOptimizedVarDict[key]
+        
+        currentOptimizedVarDict = periodVarDict['optimize']
+        currentRelaxedVarDict = periodVarDict['relax']
+        
+        # only the variables in optimized set and relaxed set are included in the solution dictionary
+        modelVarSolutionDict = solveModel(timeLength, currentFixedVarDict, currentOptimizedVarDict, currentRelaxedVarDict)
+        
+        for key in currentOptimizedVarDict :
+            fixedAndOptimizedVarDict[key] = modelVarSolutionDict[key]
+        
+        fixedAndOptimizedVarDict['Cost'] = modelVarSolutionDict['Cost']
+        relaxAndFixAccumulatedRuntime += modelVarSolutionDict['Runtime']
+    
+    print('Relax and Fix complete')
+    
+    # output the result of relax and fix
+    column = ['Variable name', 'Value']
+    data = [[key, fixedAndOptimizedVarDict[key]] for key in fixedAndOptimizedVarDict]
+    data.append(['RelaxAndFixRuntime', relaxAndFixAccumulatedRuntime])
+
     for fixAndOptimizeDecomposition in [1, 2, 3] :
-        # relax and fix decomposition
-        # 1. Time Decomposition
-        # 2. Time and Stage Decomposition 1
-        # 3. Time and Stage Decomposition 2
-        # relaxAndFixDecomposition = 1
-        
-        subProblemVarList = []
-        
-        if relaxAndFixDecomposition == 1 :
-            # time decomposition
-            subProblemVarList = relaxAndFix_orderByTimePeriodsAscending(windowSize, overlap, timeLength, numOfUsers, providerList, vmTypeList, vmContractList, vmPaymentList, numOfRouters)
-        elif relaxAndFixDecomposition == 2 :
-            # time and stage decomposition 1
-            subProblemVarList = relaxAndFix_orderByTimePeriodsAndStagesAscending(windowSize, overlap, timeLength, numOfUsers, providerList, vmTypeList, vmContractList, vmPaymentList, numOfRouters)
-        elif relaxAndFixDecomposition == 3 :
-            # time and stage decomposition 2
-            subProblemVarList = relaxAndFix_orderByTimePeriodsAndStagesAscending_2(windowSize, overlap, timeLength, numOfUsers, providerList, vmTypeList, vmContractList, vmPaymentList, numOfRouters)
-        else :
-            print('No decomposition was choosed')
-        
-        fixedAndOptimizedVarDict = dict()
-        relaxAndFixAccumulatedRuntime = 0
-        
-        for subProblemIndex in range(0, len(subProblemVarList)) :
-            periodVarDict = subProblemVarList[subProblemIndex]
-            currentFixedVarDict = periodVarDict['fix']
-            
-            # update the values of fixed decision variables
-            for key in currentFixedVarDict :
-                currentFixedVarDict[key] = fixedAndOptimizedVarDict[key]
-            
-            currentOptimizedVarDict = periodVarDict['optimize']
-            currentRelaxedVarDict = periodVarDict['relax']
-            
-            # only the variables in optimized set and relaxed set are included in the solution dictionary
-            modelVarSolutionDict = solveModel(timeLength, currentFixedVarDict, currentOptimizedVarDict, currentRelaxedVarDict)
-            
-            for key in currentOptimizedVarDict :
-                fixedAndOptimizedVarDict[key] = modelVarSolutionDict[key]
-            
-            fixedAndOptimizedVarDict['Cost'] = modelVarSolutionDict['Cost']
-            relaxAndFixAccumulatedRuntime += modelVarSolutionDict['Runtime']
-        
-        print('Relax and Fix complete')
-        
-        # output the result of relax and fix
-        column = ['Variable name', 'Value']
-        data = [[key, fixedAndOptimizedVarDict[key]] for key in fixedAndOptimizedVarDict]
-        data.append(['RelaxAndFixRuntime', relaxAndFixAccumulatedRuntime])
-        
         writeModelResult('relaxAndFixModelResult_RF' + str(relaxAndFixDecomposition) + '_FO' + str(fixAndOptimizeDecomposition) + '.csv', column, data)
-        
         
         # fix and optimize decomposition
         # 1. Time Decomposition
