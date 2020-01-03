@@ -1297,8 +1297,8 @@ try :
 	'''
 	
 	# Upfront budget
-	upfrontBudget = 10
-	monthlyPaymentBudget = 10
+	upfrontBudget = 150
+	monthlyPaymentBudget = 150
 	
 	# constraint 28 : the initial reservation budget calculation of each user at each time period
 	# constraint 29 : the resource utilization budget calculation of each user at each time period
