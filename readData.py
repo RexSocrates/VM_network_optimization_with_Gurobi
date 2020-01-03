@@ -247,13 +247,16 @@ def getCostOfStorageAndBandwidth() :
             outputData[region] = newData
     return outputData
 
-def getGreenEnergyUsageLimit(timeLength, providerList) :
+def getGreenEnergyUsageLimit(timeLength, providerList, testValue) :
     greenEnergyUsageLimitList = []
     for timeStage in range(0, timeLength) :
         providerGreenEnergyLimitDict = dict()
         for providerIndex in range(0, len(providerList)) :
             provider = providerList[providerIndex]
+            providerArea = provider.split('-')[0]
             greenEnergyLimit = 20
+            if providerArea == 'us' :
+                greenEnergyLimit = testValue
             providerGreenEnergyLimitDict[str(provider)] = greenEnergyLimit
         greenEnergyUsageLimitList.append(providerGreenEnergyLimitDict)
     return greenEnergyUsageLimitList

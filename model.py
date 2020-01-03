@@ -4,7 +4,7 @@ from subFunctions import *
 from gurobipy import *
 import random
 
-testValueList = [val for val in range(105, 151, 5)]
+testValueList = [val for val in range(0, 161, 10)]
 # testValueList.extend([val for val in range(5, 151, 5)])
 # testValueList.reverse()
 
@@ -1439,7 +1439,7 @@ for testValue in testValueList :
 		        
 		# constraint 34 : the sum of energy used to charge the battery and energy directly supply to DC do not exceed the amount of green energy production
 		# this is the limit of renewable energy production
-		greenEnergyUsageLimitList = getGreenEnergyUsageLimit(timeLength, providerList)
+		greenEnergyUsageLimitList = getGreenEnergyUsageLimit(timeLength, providerList, testValue)
 		for timeStage in range(0, timeLength) :
 		    providerSolarEnergyToDcDecVarDict = solarEnergyToDcDecVarList[timeStage]
 		    providerSolarEnergyToBatteryDecVarDict = solarEnergyToBatteryDecVarList[timeStage]
