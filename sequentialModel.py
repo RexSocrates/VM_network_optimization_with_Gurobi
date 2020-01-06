@@ -6,6 +6,7 @@ import random
 
 gurobiErr = False
 vmModelResultData = []
+bandModelResultData = []
 
 timeLength = 50
 # get instance data from csv file, get get the lists of vm types and cloud providers from instance data
@@ -1177,6 +1178,38 @@ for timeStage in range(0, timeLength) :
 			constrIndex = '_t_' + str(timeStage) + '_e_' + str(edgeIndex) + '_u_' + str(userIndex)
 			bandModel.addConstr(decVar_edgeFlow, GRB.GREATER_EQUAL, 0, name='c50:' + constrIndex)
 print('Constraint 50 complete')
+
+bandModel.write("bandModel.lp")
+
+try :
+	bandModel.optimize()
+except GurobiError as e :
+	gurobiErr = True
+	print('Gurobi error')
+	for v in bandModel.getVars() :
+		varName = v.varName
+		varValue = v.x
+		bandModelResultData.append([varName, varValue])
+finally :
+	bandModelTotalCost = bandModel.ObjVal
+	print("Bandwidth model Objective function value : ", bandModelTotalCost)
+	bandModelRuntime = bandModel.Runtime
+	print('Gurobi run time : ', bandModelRuntime)
+	bandModelMipGap = bandModel.MIPGap
+
+	if gurobiErr == False :
+		for v in bandModel.getVars() :
+			varName = v.varName
+			varValue = v.x
+			bandModelResultData.append([varName, varValue])
+	bandModelResultData.append(['Cost', bandModelTotalCost])
+	bandModelResultData.append(['Runtime', bandModelRuntime])
+	bandModelResultData.append(['MIPGap', bandModelMipGap])
+
+	resultColumn = ['Variable Name', 'Value']
+
+	writeModelResult('modelResult_Bandwidth.csv', resultColumn, bandModelResultData)
+
 
 
 
