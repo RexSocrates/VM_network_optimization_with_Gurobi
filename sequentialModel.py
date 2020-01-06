@@ -82,7 +82,7 @@ for timeStage in range(0, timeLength) :
 					vmPaymentDecVarDict_res = dict()
 					vmPaymentDecVarDict_uti = dict()
 					for vmPayment in vmPaymentList :
-						vmResUtiDecVarIndex = str(timeStage) + 'p_' + str(provider) + 'u_' + str(userIndex) + 'i_' + str(vmType) + 'k_' + str(vmContractLength) + 'j_' + str(vmPayment)
+						vmResUtiDecVarIndex = '_t_' + str(timeStage) + 'p_' + str(provider) + 'u_' + str(userIndex) + 'i_' + str(vmType) + 'k_' + str(vmContractLength) + 'j_' + str(vmPayment)
 						decVar_res = vmModel.addVar(vtype=GRB.INTEGER, name='vmRes' + vmResUtiDecVarIndex)
 						decVar_uti = vmModel.addVar(vtype=GRB.INTEGER, name='vmUti' + vmResUtiDecVarIndex)
 
@@ -655,7 +655,7 @@ print('Constraint 43, 44, 45 complete')
 vmModel.write("vmModel.lp")
 
 try :
-	model.optimize()
+	vmModel.optimize()
 except GurobiError as e :
 	gurobiErr = True
 	print('Gurobi error')
@@ -681,7 +681,7 @@ finally :
 
 	resultColumn = ['Variable Name', 'Value']
 
-	writeModelResult('modelResult.csv', resultColumn, vmModelResultData)
+	writeModelResult('modelResult_VM.csv', resultColumn, vmModelResultData)
 
 # Bandwidth
 
@@ -860,6 +860,24 @@ for timeStage in range(0, timeLength) :
 		edgeFlowDecVarDict[str(edgeIndex)] = userEdgeFlowDecVarDict
 	edgeFlowDecVarList.append(edgeFlowDecVarDict)
 
+bandwidthUpfrontPaymentCostDecVarList = []
+bandwidthMonthlyPaymentCostDecVarList = []
+
+for timeStage in range(0, timeLength) :
+	userBandwidthUpfrontPaymentCostDecVarDict = dict()
+	userBandwidthMonthlyPaymentCostDecVarDict = dict()
+	for userIndex in range(0, numOfUsers) :
+		decVarIndex = 't_' + str(timeStage) + 'u_' + str(userIndex)
+
+		bandwidthUpfrontPaymentCost = bandModel.addVar(vtype=GRB.CONTINUOUS, name='UC_Bandwidth_' + decVarIndex)
+		bandwidthMonthlyPaymentCost = bandModel.addVar(vtype=GRB.CONTINUOUS, name='MC_Bandwidth_' + decVarIndex)
+
+		userBandwidthUpfrontPaymentCostDecVarDict[str(userIndex)] = bandwidthUpfrontPaymentCost
+		userBandwidthMonthlyPaymentCostDecVarDict[str(userIndex)] = bandwidthMonthlyPaymentCost
+	
+	bandwidthUpfrontPaymentCostDecVarList.append(userBandwidthUpfrontPaymentCostDecVarDict)
+	bandwidthMonthlyPaymentCostDecVarList.append(userBandwidthMonthlyPaymentCostDecVarDict)
+
 bandModel.update()
 
 bandModel.setObjective(quicksum([bandwidthCostParameterList[itemIndex] * bandwidthCostDecVarList[itemIndex] for itemIndex in range(0, len(bandwidthCostParameterList))]) + quicksum([sortedEnergyPrice[timeStage][str(area)] * quicksum([routerEnergyConsumptionDecVarList[timeStage][str(routerIndex)] + routerChangeStateEnergyConsumption * routerOnDecVarList[timeStage][str(routerIndex)] + routerChangeStateEnergyConsumption * routerOffDecVarList[timeStage][str(routerIndex)] for routerIndex in routerAreaDict[area]]) for timeStage in range(0, timeLength) for area in routerAreaDict]), GRB.MINIMIZE)
@@ -913,15 +931,252 @@ for timeStage in range(0, timeLength) :
 				routerOutFlowEdgesDecVarList.append(decVar_edgeFlow)
 
 		bandModel.addConstr(decVar_routerBandwidthUsage, GRB.EQUAL, quicksum(routerInFlowEdgesDecVarList) + quicksum(routerOutFlowEdgesDecVarList), name='c14:' + constrIndex)
-print('Constraint 14, 14 complete')
+print('Constraint 13, 14 complete')
+
+# constraint 23 : the amounf of bandwidth utilization cannot exceed the amount of effective bandwidth reservation
+for timeStage in range(0, timeLength) :
+	for userIndex in range(0, numOfUsers) :
+		for routerIndex in range(0, numOfRouters) :
+			for bandContract in bandContractList :
+				for bandPayment in bandPaymentList :
+					bandDecVar_uti = bandUtilizationDecVarList[timeStage][str(userIndex)][str(routerIndex)][str(bandContract)][str(bandPayment)]
+					effectiveBandwidthReservationDecVarList = effectiveBandDecVarDict[str(userIndex)][str(routerIndex)][str(bandContract)][str(bandPayment)][timeStage]
+
+					constrIndex = '_t_' + str(timeStage) + '_u_' + str(userIndex) + '_r_' + str(routerIndex) + '_l_' + str(bandContract) + '_m_' + str(bandPayment)
+
+					bandModel.addConstr(bandDecVar_uti, GRB.LESS_EQUAL, quicksum(effectiveBandwidthReservationDecVarList), name='c23:' + constrIndex)
+print('Constraint 23 complete')
+
+# constraint 24 : bandwidth usage cannot exceed the limit
+for timeStage in range(0, timeLength) :
+	for routerIndex in range(0, numOfRouters) :
+
+		bandwidthUsageDecVarList = []
+
+		for userIndex in range(0, numOfUsers) :
+			for bandContract in bandContractList :
+				for bandPayment in bandPaymentList :
+					bandDecVar_uti = bandUtilizationDecVarList[timeStage][str(userIndex)][str(routerIndex)][str(bandContract)][str(bandPayment)]
+					bandwidthUsageDecVarList.append(bandDecVar_uti)
+			bandDecVar_onDemand = bandOnDemandDecVarList[timeStage][str(userIndex)][str(routerIndex)]
+			bandwidthUsageDecVarList.append(bandDecVar_onDemand)
+
+		decVar_routerStatus = routerStatusDecVarList[timeStage][str(routerIndex)]
+
+		constrIndex = '_t_' + str(timeStage) + '_r_' + str(routerIndex)
+
+		bandModel.addConstr(quicksum(bandwidthUsageDecVarList), GRB.LESS_EQUAL, decVar_routerStatus * routerCapacity, name='c24:' + constrIndex)
+print('Constraint 24 complete')
+
+# constraint 25 : the initialization of router status
+for routerIndex in range(0, numOfRouters) :
+	decVar_routerStatus = routerStatusDecVarList[0][str(routerIndex)]
+
+	constrIndex = '_t_' + str(0) + '_r_' + str(routerIndex)
+
+	bandModel.addConstr(decVar_routerStatus, GRB.EQUAL, 0, name='c25:' + constrIndex)
+print('Constraint 25 complete')
+
+# constraint 26 : the decision variables of bandwidth must greater than 0
+for timeStage in range(0, timeLength) :
+	for userIndex in range(0, numOfUsers) :
+		for routerIndex in range(0, numOfRouters) :
+			for bandContract in bandContractList :
+				for bandPayment in bandPaymentList :
+					bandDecVar_res = bandResDecVarList[timeStage][str(userIndex)][str(routerIndex)][str(bandContract)][str(bandPayment)]
+					bandDecVar_uti = bandUtilizationDecVarList[timeStage][str(userIndex)][str(routerIndex)][str(bandContract)][str(bandPayment)]
+
+					constrIndex = '_t_' + str(timeStage) + '_u_' + str(userIndex) + '_r_' + str(routerIndex) + '_l_' + str(bandContract) + '_m_' + str(bandPayment)
+
+					bandModel.addConstr(bandDecVar_res, GRB.GREATER_EQUAL, 0, name='c26_res:' + constrIndex)
+					bandModel.addConstr(bandDecVar_uti, GRB.GREATER_EQUAL, 0, name='c26_uti:' + constrIndex)
+
+			constrIndex = '_t_' + str(timeStage) + '_u_' + str(userIndex) + '_r_' + str(routerIndex)
+			bandDecVar_onDemand = bandOnDemandDecVarList[timeStage][str(userIndex)][str(routerIndex)]
+
+			bandModel.addConstr(bandDecVar_onDemand, GRB.GREATER_EQUAL, 0, name='c26_onDemand:' + constrIndex)
+print('Constraint 26 complete')
+
+# constraint 28 : upfront payment budget 
+for timeStage in range(0, timeLength) :
+	for userIndex in range(0, numOfUsers) :
+		bandwidthUpfrontPaymentCostDecVar = bandwidthUpfrontPaymentCostDecVarList[timeStage][str(userIndex)]
+
+		upfrontCostDecVarList = []
+		upfrontCostParameterList = []
+
+		for routerIndex in range(0, numOfRouters) :
+			for bandContract in bandContractList :
+				for bandPayment in bandPaymentList :
+					bandDecVar_res = bandResDecVarList[timeStage][str(userIndex)][str(routerIndex)][str(bandContract)][str(bandPayment)]
+					bandwidthResFee = sortedRouter[str(routerIndex)][str(bandContract)][str(bandPayment)].reservationFee
+
+					upfrontCostDecVarList.append(bandDecVar_res)
+					upfrontCostParameterList.append(bandwidthResFee)
+
+		constrIndex = '_t_' + str(timeStage) + '_u_' + str(userIndex)
+
+		bandModel.addConstr(bandwidthUpfrontPaymentCostDecVar, GRB.EQUAL, quicksum([upfrontCostDecVarList[itemIndex] * upfrontCostParameterList[itemIndex] for itemIndex in range(0, len(upfrontCostDecVarList))]), name='c28_bandwidth:' + constrIndex)
+print('Constraint 28 bandwidth complete')
+
+# constraint 29 : monthly payment budget
+for timeStage in range(0, timeLength) :
+	for userIndex in range(0, numOfUsers) :
+		bandwidthMonthlyPaymentCostDecVar = bandwidthMonthlyPaymentCostDecVarList[timeStage][str(userIndex)]
+
+		monthlyCostDecVarList = []
+		monthlyCostParameterList = []
+
+		for routerIndex in range(0, numOfRouters) :
+			for bandContract in bandContractList :
+				for bandPayment in bandPaymentList :
+					effectiveBandwidthReservationList = effectiveBandDecVarDict[str(userIndex)][str(routerIndex)][str(bandContract)][str(bandPayment)][timeStage]
+					bandwidthUtiFee = sortedRouter[str(routerIndex)][str(bandContract)][str(bandPayment)].utilizationFee
+
+					monthlyCostDecVarList.append(quicksum(effectiveBandwidthReservationList))
+					monthlyCostParameterList.append(bandwidthUtiFee)
+
+		constrIndex = '_t_' + str(timeStage) + '_u_' + str(userIndex)
+
+		bandModel.addConstr(bandwidthMonthlyPaymentCostDecVar, GRB.EQUAL, quicksum([monthlyCostDecVarList[itemIndex] * monthlyCostParameterList[itemIndex] for itemIndex in range(0, len(monthlyCostDecVarList))]), name='c29:bandwidth:' + constrIndex)
+print('Constraint 29 bandwidth complete')
 
 
+# constraint 30, 31 : the budget limit of bandwidth upfront payment cost and monthly payment cost
+for timeStage in range(0, timeLength) :
+	for userIndex in range(0, numOfUsers) :
+		bandwidthUpfrontPaymentCostDecVar = bandwidthUpfrontPaymentCostDecVarList[timeStage][str(userIndex)]
+		bandwidthMonthlyPaymentCostDecVar = bandwidthMonthlyPaymentCostDecVarList[timeStage][str(userIndex)]
 
+		constrIndex = '_t_' + str(timeStage) + '_u_' + str(userIndex)
 
+		bandModel.addConstr(bandwidthUpfrontPaymentCostDecVar, GRB.LESS_EQUAL, totalBudgetOfUpfrontPayment * (1 - vmBudgetPercentage), name='c30_bandwidth:' + constrIndex)
+		bandModel.addConstr(bandwidthMonthlyPaymentCostDecVar, GRB.LESS_EQUAL, totalBudgetOfMonthlyPayment * (1 - vmBudgetPercentage), name='c30_bandwidth:' + constrIndex)
+print('Constraint 30, 31 bandwidth complete')
 
+# constraint 46 : flow in = flow out
+for timeStage in range(0, timeLength) :
+	for userIndex in range(0, numOfUsers) :
+		for routerIndex in range(0, numOfRouters) : 
+			inFlowDecVarList = []
+			outFlowDecVarList = []
 
+			router = sortedRouter[str(routerIndex)][str(bandContractList[0])][str(bandPaymentList[0])]
+			inFlowEdges = router.inFlowEdges
+			outFlowEdges = router.outFlowEdges
 
+			for edgeIndex in inFlowEdges :
+				decVar_edgeFlow = edgeFlowDecVarList[timeStage][str(edgeIndex)][str(userIndex)]
+				inFlowDecVarList.append(decVar_edgeFlow)
 
+			for edgeIndex in outFlowEdges :
+				decVar_edgeFlow = edgeFlowDecVarList[timeStage][str(edgeIndex)][str(userIndex)]
+				outFlowDecVarList.append(decVar_edgeFlow)
+
+			constrIndex = '_t_' + str(timeStage) + '_u_' + str(userIndex) + '_r_' + str(routerIndex)
+
+			bandModel.addConstr(quicksum(outFlowDecVarList), GRB.EQUAL, quicksum(inFlowDecVarList), name='c46:' + constrIndex)
+print('Constraint 46 complete')
+
+# constraint 47 : the sum of flow equals the sum of bandwidth utilization and on-demand bandwidth
+for timeStage in range(0, timeLength) :
+	for userIndex in range(0, numOfUsers) :
+		for routerIndex in range(0, numOfRouters) :
+			router = sortedRouter[str(routerIndex)][str(bandContractList[0])][str(bandPaymentList[0])]
+			outFlowEdges = router.outFlowEdges
+
+			bandwidthUtilizationAndOndemandDecVarList = []
+
+			for bandContract in bandContractList :
+				for bandPayment in bandPaymentList :
+					bandDecVar_uti = bandUtilizationDecVarList[timeStage][str(userIndex)][str(routerIndex)][str(bandContract)][str(bandPayment)]
+					bandwidthUtilizationAndOndemandDecVarList.append(bandDecVar_uti)
+
+			bandDecVar_onDemand = bandOnDemandDecVarList[timeStage][str(userIndex)][str(routerIndex)]
+
+			bandwidthUtilizationAndOndemandDecVarList.append(bandDecVar_onDemand)
+
+			outFlowDecVarList = []
+
+			for edgeIndex in outFlowEdges :
+				decVar_edgeFlow = edgeFlowDecVarList[timeStage][str(edgeIndex)][str(userIndex)]
+				outFlowDecVarList.append(decVar_edgeFlow)
+
+			constrIndex = '_t_' + str(timeStage) + '_u_' + str(userIndex) + '_r_' + str(routerIndex)
+
+			bandModel.addConstr(quicksum(outFlowDecVarList), GRB.EQUAL, quicksum(bandwidthUtilizationAndOndemandDecVarList), name='c47:' + constrIndex)
+print('Constraint 47 complete')
+
+# constraint 48 : the bandwidth usage should satisfy the sum of outbound bandwidth of VM in each provider
+for timeStage in range(0, timeLength) :
+	for userIndex in range(0, numOfUsers) :
+		for provider in providerList :
+			outboundBandwidthVarList = []
+			outboundBandwidthParameterList = []
+			for vmType in vmTypeList :
+				utilizationAndOndemandVM = 0
+				outboundBandwidthRequirement = 0
+				for vmContractLength in vmContractLengthList :
+					for vmPayment in vmPaymentList :
+						vmResUtiDecVarIndex = '_t_' + str(timeStage) + 'p_' + str(provider) + 'u_' + str(userIndex) + 'i_' + str(vmType) + 'k_' + str(vmContractLength) + 'j_' + str(vmPayment)
+						vmDecVarName_uti = 'vmUti' + vmResUtiDecVarIndex
+
+						vm_uti = float(vmModelResultData[vmDecVarName_uti])
+						utilizationAndOndemandVM += vm_uti
+
+						vm = sortedVmDict[str(provider)][str(vmType)][str(vmContractLength)][str(vmPayment)]
+						outboundBandwidthRequirement = vm.networkReq
+				
+				vmOndemandIndex = 't_' + str(timeStage) + 'p_' + str(provider) + 'u_' + str(userIndex) + 'i_' + str(vmType)
+				vmDecVarName_onDemand = 'vmOnDemand_' + vmOndemandIndex
+				vm_onDemand = float(vmModelResultData[vmDecVarName_onDemand])
+				utilizationAndOndemandVM += vm_onDemand
+
+				outboundBandwidthVarList.append(utilizationAndOndemandVM)
+				outboundBandwidthParameterList.append(outboundBandwidthRequirement)
+
+			providerDirectlyConnectedEdges = networkTopology['provider'][str(provider)]
+
+			outFlowDecVarList = []
+			for edgeIndex in providerDirectlyConnectedEdges :
+				decVar_edgeFlow = edgeFlowDecVarList[timeStage][str(edgeIndex)][str(userIndex)]
+				outFlowDecVarList.append(decVar_edgeFlow)
+
+			constrIndex = '_t_' + str(timeStage) + '_u_' + str(userIndex) + '_p_' + str(provider)
+			bandModel.addConstr(quicksum(outFlowDecVarList), GRB.GREATER_EQUAL, sum([outboundBandwidthVarList[itemIndex] * outboundBandwidthParameterList[itemIndex] for itemIndex in range(0, len(outboundBandwidthVarList))]), name='c48:' + constrIndex)
+print('Constraint 48 complete')
+
+# constraint 49
+for timeStage in range(0, timeLength) :
+	for userIndex in range(0, numOfUsers) :
+		userDirectlyConnectedEdges = networkTopology['user'][userIndex]
+
+		userFlowInDecVarList = []
+		for edgeIndex in userDirectlyConnectedEdges :
+			decVar_edgeFlow = edgeFlowDecVarList[timeStage][str(edgeIndex)][str(userIndex)]
+			userFlowInDecVarList.append(decVar_edgeFlow)
+
+		providerFlowOutDecVarList = []
+		for provider in providerList :
+			providerDirectlyConnectedEdges = networkTopology['provider'][str(provider)]
+
+			for edgeIndex in providerDirectlyConnectedEdges :
+				decVar_edgeFlow = edgeFlowDecVarList[timeStage][str(edgeIndex)][str(userIndex)]
+				providerFlowOutDecVarList.append(decVar_edgeFlow)
+		constrIndex = '_t_' + str(timeStage) + '_u_' + str(userIndex)
+
+		bandModel.addConstr(quicksum(userFlowInDecVarList), GRB.GREATER_EQUAL, quicksum(providerFlowOutDecVarList), name='c49:' + constrIndex)
+print('Constraint 49 complete')
+
+# constraint 50 : edge flow >= 0
+for timeStage in range(0, timeLength) :
+	for edgeIndex in range(0, len(edgeList)) :
+		for userIndex in range(0, numOfUsers) :
+			decVar_edgeFlow = edgeFlowDecVarList[timeStage][str(edgeIndex)][str(userIndex)]
+
+			constrIndex = '_t_' + str(timeStage) + '_e_' + str(edgeIndex) + '_u_' + str(userIndex)
+			bandModel.addConstr(decVar_edgeFlow, GRB.GREATER_EQUAL, 0, name='c50:' + constrIndex)
+print('Constraint 50 complete')
 
 
 
