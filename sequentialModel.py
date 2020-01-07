@@ -6,6 +6,7 @@ import random
 
 gurobiErr = False
 vmModelResultData = []
+vmModelResultDict = dict()
 bandModelResultData = []
 
 timeLength = 50
@@ -680,6 +681,9 @@ finally :
 	vmModelResultData.append(['Runtime', vmModelRuntime])
 	vmModelResultData.append(['MIPGap', vmModelMipGap])
 
+	for item in vmModelResultData :
+		vmModelResultDict[item[0]] = float(item[1])
+
 	resultColumn = ['Variable Name', 'Value']
 
 	writeModelResult('modelResult_VM.csv', resultColumn, vmModelResultData)
@@ -1141,7 +1145,7 @@ for timeStage in range(0, timeLength) :
 						vmResUtiDecVarIndex = '_t_' + str(timeStage) + 'p_' + str(provider) + 'u_' + str(userIndex) + 'i_' + str(vmType) + 'k_' + str(vmContractLength) + 'j_' + str(vmPayment)
 						vmDecVarName_uti = 'vmUti' + vmResUtiDecVarIndex
 
-						vm_uti = float(vmModelResultData[vmDecVarName_uti])
+						vm_uti = float(vmModelResultDict[vmDecVarName_uti])
 						utilizationAndOndemandVM += vm_uti
 
 						vm = sortedVmDict[str(provider)][str(vmType)][str(vmContractLength)][str(vmPayment)]
@@ -1149,7 +1153,7 @@ for timeStage in range(0, timeLength) :
 				
 				vmOndemandIndex = 't_' + str(timeStage) + 'p_' + str(provider) + 'u_' + str(userIndex) + 'i_' + str(vmType)
 				vmDecVarName_onDemand = 'vmOnDemand_' + vmOndemandIndex
-				vm_onDemand = float(vmModelResultData[vmDecVarName_onDemand])
+				vm_onDemand = float(vmModelResultDict[vmDecVarName_onDemand])
 				utilizationAndOndemandVM += vm_onDemand
 
 				outboundBandwidthVarList.append(utilizationAndOndemandVM)
