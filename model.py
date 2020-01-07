@@ -4,9 +4,9 @@ from subFunctions import *
 from gurobipy import *
 import random
 
-testValueList = [val for val in range(0, 10001, 400)]
+testValueList = [0, 10, 50, 100, 200, 250]
 # testValueList.extend([val for val in range(5, 151, 5)])
-# testValueList.reverse()
+testValueList.reverse()
 
 for testValue in testValueList :
 	try :
@@ -27,7 +27,7 @@ for testValue in testValueList :
 		# model.setParam(GRB.Param.MIPGapAbs, 0.02)
 		# model.setParam(GRB.Param.MIPGap, 0.0004)
 		
-		timeLength = 20
+		timeLength = 50
 		numOfUsers = len(networkTopology['user'])
 		# vmContractLengthList = [10, 30]
 		vmContractLengthList = vmDataConfiguration['vmContractLengthList']
@@ -1296,8 +1296,8 @@ for testValue in testValueList :
 		'''
 		
 		# Upfront budget
-		upfrontBudget = 150
-		monthlyPaymentBudget = 150
+		upfrontBudget = testValue
+		monthlyPaymentBudget = testValue
 		
 		# constraint 28 : the initial reservation budget calculation of each user at each time period
 		# constraint 29 : the resource utilization budget calculation of each user at each time period
@@ -1439,7 +1439,7 @@ for testValue in testValueList :
 		        
 		# constraint 34 : the sum of energy used to charge the battery and energy directly supply to DC do not exceed the amount of green energy production
 		# this is the limit of renewable energy production
-		greenEnergyUsageLimitList = getGreenEnergyUsageLimit(timeLength, providerList, testValue)
+		greenEnergyUsageLimitList = getGreenEnergyUsageLimit(timeLength, providerList)
 		for timeStage in range(0, timeLength) :
 		    providerSolarEnergyToDcDecVarDict = solarEnergyToDcDecVarList[timeStage]
 		    providerSolarEnergyToBatteryDecVarDict = solarEnergyToBatteryDecVarList[timeStage]
