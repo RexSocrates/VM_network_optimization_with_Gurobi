@@ -725,9 +725,6 @@ for userIndex in range(0, numOfUsers) :
 		routerEffectiveBandDecVarDict[str(routerIndex)] = bandContractEffectiveBandDecVarDict
 	effectiveBandDecVarDict[str(userIndex)] = routerEffectiveBandDecVarDict
 
-bandwidthCostParameterList = []
-bandwidthCostDecVarList = []
-
 # create bandwidth cost decision variables
 for timeStage in range(0, timeLength) :
 	userBandDecVarDict_res = dict()
@@ -767,20 +764,11 @@ for timeStage in range(0, timeLength) :
 					bandwidthUtiFee = router.utilizationFee
 					bandwidthOnDemandFee = router.onDemandFee
 
-					bandwidthCostParameterList.append(bandwidthResFee)
-					bandwidthCostDecVarList.append(bandDecVar_res)
-
-					bandwidthCostParameterList.append(bandwidthUtiFee)
-					bandwidthCostDecVarList.append(quicksum(effectiveBandwidthReservationList[timeStage]))
-
 				contractBandDecVarDict_res[str(bandContract)] = paymentBandDecVarDict_res
 				contractBandDecVarDict_uti[str(bandContract)] = paymentBandDecVarDict_uti
 
 			decVarIndex = 't_' + str(timeStage) + 'u_' + str(userIndex) + 'r_' + str(routerIndex)
 			bandDecVar_onDemand = bandModel.addVar(vtype=GRB.CONTINUOUS, name = 'bandOnDemand_' + decVarIndex)
-
-			bandwidthCostParameterList.append(bandwidthOnDemandFee)
-			bandwidthCostDecVarList.append(bandDecVar_onDemand)
 
 			routerBandDecVarDict_res[str(routerIndex)] = contractBandDecVarDict_res
 			routerBandDecVarDict_uti[str(routerIndex)] = contractBandDecVarDict_uti
@@ -793,6 +781,36 @@ for timeStage in range(0, timeLength) :
 	bandResDecVarList.append(userBandDecVarDict_res)
 	bandUtilizationDecVarList.append(userBandDecVarDict_uti)
 	bandOnDemandDecVarList.append(userBandDecVarDict_onDemand)
+
+# calculate the cost of bandwidth usage
+bandwidthCostParameterList = []
+bandwidthCostDecVarList = []
+for timeStage in range(0, timeLength) :
+	for userIndex in range(0, numOfUsers) :
+		for routerIndex in range(0, numOfRouters) :
+			onDemandBandwidthFee = 0
+			for bandContract in bandContractList :
+				for bancPayment in bandPaymentList :
+					bandDecVar_res = bandResDecVarList[timeStage][str(userIndex)][str(routerIndex)][str(bandContract)][str(bandPayment)]
+					bandDecVar_uti = bandUtilizationDecVarList[timeStage][str(userIndex)][str(routerIndex)][str(bandContract)][str(bandPayment)]
+
+					router = sortedRouter[str(routerIndex)][str(bandContract)][str(bandPayment)]
+					bandReservationFee = router.reservationFee
+					bandUtilizationFee = router.utilizationFee
+					onDemandBandwidthFee = router.onDemandFee
+
+					effectiveBandwidthReservationDecVarList = effectiveBandDecVarDict[str(userIndex)][str(routerIndex)][str(bandContract)][str(bandPayment)][timeStage]
+
+					bandwidthCostParameterList.append(bandReservationFee)
+					bandwidthCostDecVarList.append(bandDecVar_res)
+
+					bandwidthCostParameterList.append(bandUtilizationFee)
+					bandwidthCostDecVarList.append(quicksum(effectiveBandwidthReservationDecVarList))
+
+			bandDecVar_onDemand = bandOnDemandDecVarList[timeStage][str(userIndex)][str(routerIndex)]
+
+			bandwidthCostParameterList.append(onDemandBandwidthFee)
+			bandwidthCostDecVarList.append(bandDecVar_onDemand)
 
 # Network energy
 routerAreaDict = getRouterAreaDict(routerList)
