@@ -235,7 +235,7 @@ for timeStage in range(0, timeLength) :
 					turnedOnVMs = vmModel.addVar(vtype=GRB.CONTINUOUS, name='numOfTurnedOnVms_' + decVarIndex)
 					turnedOffVMs = vmModel.addVar(vtype=GRB.CONTINUOUS, name='numOfTurnedOffVms_' + decVarIndex)
 
-					vmData = sortedVmDict[str(provider)][str(vmType)][str(vmContractLengthList[0][str(vmPaymentList[0])])]
+					vmData = sortedVmDict[str(provider)][str(vmType)][str(vmContractLengthList[0])][str(vmPaymentList[0])]
 					energyConsumptionOfVM = vmData.energyConsumption
 					changeStateEnergyConsumptionOfVM = energyConsumptionOfVM * changeStateEnergyPercentage
 
@@ -765,7 +765,7 @@ for timeStage in range(0, timeLength) :
 					router = sortedRouter[str(routerIndex)][str(bandContract)][str(bandPayment)]
 					bandwidthResFee = router.reservationFee
 					bandwidthUtiFee = router.utilizationFee
-					bandwidthOnDemandFee = onDemandFee
+					bandwidthOnDemandFee = router.onDemandFee
 
 					bandwidthCostParameterList.append(bandwidthResFee)
 					bandwidthCostDecVarList.append(bandDecVar_res)
@@ -824,7 +824,8 @@ for timeStage in range(0, timeLength) :
 	routerOffDecVarDict = dict()
 	routerBandwidthUsageDecVarDict = dict()
 	for area in routerAreaDict :
-		for routerIndex in routerAreaDict[area] :
+		for router in routerAreaDict[area] :
+			routerIndex = router.routerIndex
 			decVarIndex = 't_' + str(timeStage) + 'r_' + str(routerIndex)
 			
 			decVar_routerEnergyConsumption = bandModel.addVar(vtype=GRB.CONTINUOUS, name='routerEnergyConsumption_' + decVarIndex)
@@ -892,10 +893,10 @@ bandModel.setObjective(quicksum([bandwidthCostParameterList[itemIndex] * bandwid
 # constraint 11, 12 : router on / off indicators
 for timeStage in range(1, timeLength) :
 	for routerIndex in range(0, numOfRouters) :
-		decVar_routerOn = routerOnDecVarList[timeStage][routerIndex]
-		decVar_routerOff = routerOffDecVarList[timeStage][routerIndex]
-		decVar_routerStatus = routerStatusDecVarList[timeStage][routerIndex]
-		decVar_previousTimeStageRouterStatus = routerStatusDecVarList[timeStage - 1][routerIndex]
+		decVar_routerOn = routerOnDecVarList[timeStage][str(routerIndex)]
+		decVar_routerOff = routerOffDecVarList[timeStage][str(routerIndex)]
+		decVar_routerStatus = routerStatusDecVarList[timeStage][str(routerIndex)]
+		decVar_previousTimeStageRouterStatus = routerStatusDecVarList[timeStage - 1][str(routerIndex)]
 
 		constrIndex = '_t_' + str(timeStage) + '_r_' + str(routerIndex)
 
