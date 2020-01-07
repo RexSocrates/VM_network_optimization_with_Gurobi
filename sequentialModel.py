@@ -900,13 +900,13 @@ for timeStage in range(0, timeLength) :
 
 bandModel.update()
 
-bandModel.setObjective(quicksum([bandwidthCostParameterList[itemIndex] * bandwidthCostDecVarList[itemIndex] for itemIndex in range(0, len(bandwidthCostParameterList))]) + quicksum([sortedEnergyPrice[timeStage][str(area)] * quicksum([routerEnergyConsumptionDecVarList[timeStage][str(routerIndex)] + routerChangeStateEnergyConsumption * routerOnDecVarList[timeStage][str(routerIndex)] + routerChangeStateEnergyConsumption * routerOffDecVarList[timeStage][str(routerIndex)] for routerIndex in routerAreaDict[area]]) for timeStage in range(0, timeLength) for area in routerAreaDict]), GRB.MINIMIZE)
+bandModel.setObjective(quicksum([bandwidthCostParameterList[itemIndex] * bandwidthCostDecVarList[itemIndex] for itemIndex in range(0, len(bandwidthCostParameterList))]) + quicksum([sortedEnergyPrice[timeStage][str(area)] * quicksum([routerEnergyConsumptionDecVarList[timeStage][str(router.routerIndex)] + routerChangeStateEnergyConsumption * routerOnDecVarList[timeStage][str(router.routerIndex)] + routerChangeStateEnergyConsumption * routerOffDecVarList[timeStage][str(router.routerIndex)] for router in routerAreaDict[area]]) for timeStage in range(0, timeLength) for area in routerAreaDict]), GRB.MINIMIZE)
 
 # Bandwidth cost
 # quicksum([bandwidthCostParameterList[itemIndex] * bandwidthCostDecVarList[itemIndex] for itemIndex in range(0, len(bandwidthCostParameterList))])
 
 # Network energy
-# quicksum([sortedEnergyPrice[timeStage][str(area)] * quicksum([routerEnergyConsumptionDecVarList[timeStage][str(routerIndex)] + routerChangeStateEnergyConsumption * routerOnDecVarList[timeStage][str(routerIndex)] + routerChangeStateEnergyConsumption * routerOffDecVarList[timeStage][str(routerIndex)] for routerIndex in routerAreaDict[area]]) for timeStage in range(0, timeLength) for area in routerAreaDict])
+# quicksum([sortedEnergyPrice[timeStage][str(area)] * quicksum([routerEnergyConsumptionDecVarList[timeStage][str(router.routerIndex)] + routerChangeStateEnergyConsumption * routerOnDecVarList[timeStage][str(router.routerIndex)] + routerChangeStateEnergyConsumption * routerOffDecVarList[timeStage][str(router.routerIndex)] for router in routerAreaDict[area]]) for timeStage in range(0, timeLength) for area in routerAreaDict])
 
 # constraint 11, 12 : router on / off indicators
 for timeStage in range(1, timeLength) :
