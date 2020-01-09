@@ -5,6 +5,7 @@ from gurobipy import *
 import random
 
 testValueList = [val for val in range(0, 200, 10)]
+testValueList.reverse()
 
 for testValue in testValueList :
 	gurobiErr = False
@@ -29,7 +30,7 @@ for testValue in testValueList :
 	# model parameters : log file, stopping criteria
 	# log file for VM optimization model
 	vmModel.setParam(GRB.Param.LogFile, 'vm_log.txt')
-	vmModel.setParam(GRB.Param.MIPGap, 0.00019)
+	# vmModel.setParam(GRB.Param.MIPGap, 0.00019)
 	
 	# get the number of users from network topology
 	numOfUsers = len(networkTopology['user'])
@@ -711,7 +712,7 @@ for testValue in testValueList :
 	# model parameters : log file, stopping criteria
 	# log file for VM optimization model
 	bandModel.setParam(GRB.Param.LogFile, 'bandwidth_log.txt')
-	bandModel.setParam(GRB.Param.MIPGap, 0.00019)
+	# bandModel.setParam(GRB.Param.MIPGap, 0.00019)
 	
 	# get router and bandwidth data
 	numOfRouters = len(networkTopology['router'])
