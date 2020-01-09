@@ -808,7 +808,7 @@ for timeStage in range(0, timeLength) :
 		for routerIndex in range(0, numOfRouters) :
 			onDemandBandwidthFee = 0
 			for bandContract in bandContractList :
-				for bancPayment in bandPaymentList :
+				for bandPayment in bandPaymentList :
 					bandDecVar_res = bandResDecVarList[timeStage][str(userIndex)][str(routerIndex)][str(bandContract)][str(bandPayment)]
 					bandDecVar_uti = bandUtilizationDecVarList[timeStage][str(userIndex)][str(routerIndex)][str(bandContract)][str(bandPayment)]
 
