@@ -4,7 +4,7 @@ from subFunctions import *
 from gurobipy import *
 import random
 
-testValueList = []
+testValueList = [val for val in range(0, 200, 10)]
 
 for testValue in testValueList :
 	gurobiErr = False
@@ -512,8 +512,8 @@ for testValue in testValueList :
 					vmModel.addConstr(vmDecVar_onDemand, GRB.GREATER_EQUAL, 0, name='c22_onDemand:' + constrIndex)
 	print('Contraint 22 complete')
 	
-	totalBudgetOfUpfrontPayment = 150
-	totalBudgetOfMonthlyPayment = 150
+	totalBudgetOfUpfrontPayment = testValue
+	totalBudgetOfMonthlyPayment = testValue
 	
 	vmBudgetPercentage = 0.5
 	
@@ -701,7 +701,7 @@ for testValue in testValueList :
 	
 		resultColumn = ['Variable Name', 'Value']
 	
-		writeModelResult('modelResult_VM.csv', resultColumn, vmModelResultData)
+		writeModelResult('modelResult_VM_' + str(testValue) + '.csv', resultColumn, vmModelResultData)
 	
 	# Bandwidth
 	
@@ -1259,7 +1259,26 @@ for testValue in testValueList :
 	
 		resultColumn = ['Variable Name', 'Value']
 	
-		writeModelResult('modelResult_Bandwidth.csv', resultColumn, bandModelResultData)
+		writeModelResult('modelResult_Bandwidth_' + str(testValue) + '.csv', resultColumn, bandModelResultData)
+
+		# combine the results of two models
+		sequentialModelCombinedResults = []
+		for item in vmModelResultData :
+			sequentialModelCombinedResults.append(item)
+
+		vmCost = vmModelResultDict['Cost']
+		vmModelRuntime = vmModelResultDict['Runtime']
+		
+		for item in bandModelResultData :
+			sequentialModelCombinedResults.append(item)
+
+		totalCost = vmCost + bandModelTotalCost
+		totalRuntime = vmModelRuntime + bandModelRuntime
+
+		sequentialModelCombinedResults.append(['Total cost', totalCost])
+		sequentialModelCombinedResults.append(['Total runtime', totalRuntime])
+
+		writeModelResult('modelResult_VM_Bandwidth_' + str(testValue) + '.csv', resultColumn, sequentialModelCombinedResults)
 
 
 
