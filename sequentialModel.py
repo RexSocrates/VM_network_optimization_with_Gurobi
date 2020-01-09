@@ -1227,10 +1227,12 @@ print('Constraint 50 complete')
 
 bandModel.write("bandModel.lp")
 
+bandwidthModelGurobiErr = False
+
 try :
 	bandModel.optimize()
 except GurobiError as e :
-	gurobiErr = True
+	bandwidthModelGurobiErr = True
 	print('Gurobi error')
 	for v in bandModel.getVars() :
 		varName = v.varName
@@ -1243,7 +1245,7 @@ finally :
 	print('Gurobi run time : ', bandModelRuntime)
 	bandModelMipGap = bandModel.MIPGap
 
-	if gurobiErr == False :
+	if bandwidthModelGurobiErr == False :
 		for v in bandModel.getVars() :
 			varName = v.varName
 			varValue = v.x
