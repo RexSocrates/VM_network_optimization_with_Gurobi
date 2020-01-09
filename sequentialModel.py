@@ -154,7 +154,7 @@ for timeStage in range(0, timeLength) :
 						# VM utilization cost
 						effectiveVmReservationList = effectiveVmResDecVarDict[str(provider)][str(userIndex)][str(vmType)][str(vmContractLength)][str(vmPayment)][timeStage]
 						vmCostDecVarList.append(quicksum(effectiveVmReservationList))
-						vmCostParameterList.append(vmResFee)
+						vmCostParameterList.append(vmUtiFee)
 
 						# the cost of storage and bandwidth used by reserved instance
 						utilizationStorageAndBandCost = storageReq * storageAndBandPrice[str(provider)]['storage'] + bandReq * storageAndBandPrice[str(provider)]['bandwidth']
