@@ -1258,6 +1258,26 @@ finally :
 
 	writeModelResult('modelResult_Bandwidth.csv', resultColumn, bandModelResultData)
 
+	# merge two models
+	sequentialModelResults = []
+
+	for item in vmModelResultData :
+		sequentialModelResults.append(item)
+
+	vmModelCost = vmModelResultDict['Cost']
+	vmModelRuntime = vmModelResultDict['Runtime']
+
+	for item in bandModelResultData :
+		sequentialModelResults.append(item)
+
+	totalCost = vmModelCost + bandModelTotalCost
+	totalRuntime = vmModelRuntime + bandModelRuntime
+
+	sequentialModelResults.append(['Total cost', totalCost])
+	sequentialModelResults.append(['Total runtime', totalRuntime])
+
+	writeModelResult('sequentialModelResult.csv', resultColumn, sequentialModelResults)
+
 
 
 
