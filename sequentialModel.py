@@ -936,7 +936,7 @@ for timeStage in range(0, timeLength) :
 
 		constrIndex = '_t_' + str(timeStage) + '_r_' + str(routerIndex)
 
-		bandModel.addConstr(decVar_routerEnergyConsumption, GRB.EQUAL, decVar_routerStatus * idleRouterEnergyConsumption + (decVar_routerBandwidthUsage / 2 * routerCapacity) * (fullyLoadedRouterEnergyConsumption - idleRouterEnergyConsumption), name='c13:' + constrIndex)
+		bandModel.addConstr(decVar_routerEnergyConsumption, GRB.EQUAL, decVar_routerStatus * idleRouterEnergyConsumption + (decVar_routerBandwidthUsage / (2 * routerCapacity)) * (fullyLoadedRouterEnergyConsumption - idleRouterEnergyConsumption), name='c13:' + constrIndex)
 
 		routerInFlowEdges = router.inFlowEdges
 		routerOutFlowEdges = router.outFlowEdges
