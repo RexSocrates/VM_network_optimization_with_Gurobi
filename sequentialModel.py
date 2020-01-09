@@ -1075,7 +1075,7 @@ for timeStage in range(0, timeLength) :
 		constrIndex = '_t_' + str(timeStage) + '_u_' + str(userIndex)
 
 		bandModel.addConstr(bandwidthUpfrontPaymentCostDecVar, GRB.LESS_EQUAL, totalBudgetOfUpfrontPayment * (1 - vmBudgetPercentage), name='c30_bandwidth:' + constrIndex)
-		bandModel.addConstr(bandwidthMonthlyPaymentCostDecVar, GRB.LESS_EQUAL, totalBudgetOfMonthlyPayment * (1 - vmBudgetPercentage), name='c30_bandwidth:' + constrIndex)
+		bandModel.addConstr(bandwidthMonthlyPaymentCostDecVar, GRB.LESS_EQUAL, totalBudgetOfMonthlyPayment * (1 - vmBudgetPercentage), name='c31_bandwidth:' + constrIndex)
 print('Constraint 30, 31 bandwidth complete')
 
 # constraint 46 : flow in = flow out
