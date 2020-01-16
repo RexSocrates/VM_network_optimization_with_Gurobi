@@ -4,7 +4,7 @@ from subFunctions import *
 from gurobipy import *
 import random
 
-testValueList = [val for val in range(0, 200, 10)]
+testValueList = [val for val in range(0, 101, 5)]
 testValueList.reverse()
 
 for testValue in testValueList :
@@ -513,10 +513,10 @@ for testValue in testValueList :
 					vmModel.addConstr(vmDecVar_onDemand, GRB.GREATER_EQUAL, 0, name='c22_onDemand:' + constrIndex)
 	print('Contraint 22 complete')
 	
-	totalBudgetOfUpfrontPayment = testValue
-	totalBudgetOfMonthlyPayment = testValue
+	totalBudgetOfUpfrontPayment = 150
+	totalBudgetOfMonthlyPayment = 150
 	
-	vmBudgetPercentage = 0.5
+	vmBudgetPercentage = testValue / 100
 	
 	# constraint 28 : upfront payment and monthly payment budget
 	for timeStage in range(0, timeLength) :
