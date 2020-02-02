@@ -3,7 +3,7 @@ import math
 
 # fix and optimize - time decomposition
 def fixAndOptimize_orderByTimePeriodAscending(initialSolutionDecVarDict, windowSize, overlap, timeLength, numOfUsers, providerList, vmTypeList, vmContractList, vmPaymentList, numOfRouters) :
-    movingSteps = math.ceil(windowSize * overlap)
+    movingSteps = windowSize - math.ceil(windowSize * overlap)
     subProblemsList = []
     
     # count how many windows in time decomposition
@@ -76,7 +76,7 @@ def fixAndOptimize_orderByTimePeriodAscending(initialSolutionDecVarDict, windowS
 
 # set the fixed and optimized variable set for fix and optimize time and stage decomposition_1
 def fixAndOptimize_orderByTimePeriodAndStage_1(initialSolutionDecVarDict, windowSize, overlap, timeLength, numOfUsers, providerList, vmTypeList, vmContractList, vmPaymentList, numOfRouters) :
-    movingSteps = math.ceil(windowSize * overlap)
+    movingSteps = windowSize - math.ceil(windowSize * overlap)
     subProblemsList = []
     
     # count how many windows in time decomposition
@@ -153,7 +153,7 @@ def fixAndOptimize_orderByTimePeriodAndStage_1(initialSolutionDecVarDict, window
 
 # set the fixed and optimized variable set for fix and optimize time and stage decomposition_2
 def fixAndOptimize_orderByTimePeriodAndStage_2(initialSolutionDecVarDict, windowSize, overlap, timeLength, numOfUsers, providerList, vmTypeList, vmContractList, vmPaymentList, numOfRouters) :
-    movingSteps = math.ceil(windowSize * overlap)
+    movingSteps = windowSize - math.ceil(windowSize * overlap)
     subProblemsList = []
     
     # count how many windows in time decomposition
