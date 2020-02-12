@@ -26,7 +26,7 @@ try :
 	model.setParam(GRB.Param.LogFile, 'log.txt')
 	# set the stopping criteria for gurobi optimizer, which is the gap less than 0.01
 	# model.setParam(GRB.Param.MIPGapAbs, 0.02)
-	model.setParam(GRB.Param.MIPGap, 0.00019)
+	# model.setParam(GRB.Param.MIPGap, 0.00019)
 	
 	timeLength = 50
 	numOfUsers = len(networkTopology['user'])
@@ -1788,9 +1788,9 @@ finally :
 	
 	if gurobiErr == False :
 		for v in model.getVars() :
-	    	varName = v.varName
-	    	varValue = v.x
-	    	resultData.append([varName, varValue])
+			varName = v.varName
+			varValue = v.x
+			resultData.append([varName, varValue])
 	resultData.append(['Cost', modelTotalCost])
 	resultData.append(['Runtime', modelRuntime])
 	resultData.append(['MIPGap', modelMipGap])
