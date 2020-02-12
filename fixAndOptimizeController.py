@@ -3,7 +3,7 @@ import math
 
 # fix and optimize - time decomposition
 def fixAndOptimize_orderByTimePeriodAscending(initialSolutionDecVarDict, windowSize, overlap, timeLength, numOfUsers, providerList, vmTypeList, vmContractList, vmPaymentList, numOfRouters) :
-    movingSteps = math.ceil(windowSize * overlap)
+    movingSteps = windowSize - math.ceil(windowSize * overlap)
     subProblemsList = []
     
     # count how many windows in time decomposition
@@ -76,7 +76,7 @@ def fixAndOptimize_orderByTimePeriodAscending(initialSolutionDecVarDict, windowS
 
 # set the fixed and optimized variable set for fix and optimize time and stage decomposition_1
 def fixAndOptimize_orderByTimePeriodAndStage_1(initialSolutionDecVarDict, windowSize, overlap, timeLength, numOfUsers, providerList, vmTypeList, vmContractList, vmPaymentList, numOfRouters) :
-    movingSteps = math.ceil(windowSize * overlap)
+    movingSteps = windowSize - math.ceil(windowSize * overlap)
     subProblemsList = []
     
     # count how many windows in time decomposition
@@ -100,11 +100,10 @@ def fixAndOptimize_orderByTimePeriodAndStage_1(initialSolutionDecVarDict, window
         windowPeriod_start = windowPeriodList_start[periodIndex]
         windowPeriod_end = windowPeriodList_end[periodIndex]
         
-        for timeStage in range(0, timeLength) :
-            for stage in [1, 2] :
-                fixedVarDict = dict()
-                optimizedVarDict = dict()
-                
+        for stage in [1, 2] :
+            fixedVarDict = dict()
+            optimizedVarDict = dict()
+            for timeStage in range(0, timeLength) :
                 for providerIndex in range(0, len(providerList)) :
                     provider = providerList[providerIndex]
                     for userIndex in range(0, numOfUsers) :
@@ -120,8 +119,10 @@ def fixAndOptimize_orderByTimePeriodAndStage_1(initialSolutionDecVarDict, window
                                         optimizedVarDict[resDecVarName] = 0
                                         optimizedVarDict[utiDecVarName] = 0
                                     else :
-                                        fixedVarDict[resDecVarName] = initialSolutionDecVarDict[resDecVarName]
-                                        fixedVarDict[utiDecVarName] = initialSolutionDecVarDict[utiDecVarName]
+                                        # fixedVarDict[resDecVarName] = initialSolutionDecVarDict[resDecVarName]
+                                        fixedVarDict[resDecVarName] = 0
+                                        # fixedVarDict[utiDecVarName] = initialSolutionDecVarDict[utiDecVarName]
+                                        fixedVarDict[utiDecVarName] = 0
                                     
                             # on-demand VM
                             onDemandDecVarName = 'vmOnDemand_t_' + str(timeStage) + 'p_' + str(provider) + 'u_' + str(userIndex) + 'i_' + str(vmType)
@@ -129,7 +130,8 @@ def fixAndOptimize_orderByTimePeriodAndStage_1(initialSolutionDecVarDict, window
                             if timeStage >= windowPeriod_start and timeStage < windowPeriod_end and stage == 1 :
                                 optimizedVarDict[onDemandDecVarName] = 0
                             else :
-                                fixedVarDict[onDemandDecVarName] = initialSolutionDecVarDict[onDemandDecVarName]
+                                # fixedVarDict[onDemandDecVarName] = initialSolutionDecVarDict[onDemandDecVarName]
+                                fixedVarDict[onDemandDecVarName] = 0
                 
                 for routerIndex in range(0, numOfRouters) :
                     # router status
@@ -139,18 +141,19 @@ def fixAndOptimize_orderByTimePeriodAndStage_1(initialSolutionDecVarDict, window
                     if timeStage >= windowPeriod_start and timeStage < windowPeriod_end and stage == 2 :
                         optimizedVarDict[routerStatusVarName] = 0
                     else :
-                        fixedVarDict[routerStatusVarName] = initialSolutionDecVarDict[routerStatusVarName]
+                        # fixedVarDict[routerStatusVarName] = initialSolutionDecVarDict[routerStatusVarName]
+                        fixedVarDict[routerStatusVarName] = 0
                 
-                periodAndStageVarDict = dict()
-                periodAndStageVarDict['fix'] = fixedVarDict
-                periodAndStageVarDict['optimize'] = optimizedVarDict
-                subProblemsList.append(periodAndStageVarDict)
+            periodAndStageVarDict = dict()
+            periodAndStageVarDict['fix'] = fixedVarDict
+            periodAndStageVarDict['optimize'] = optimizedVarDict
+            subProblemsList.append(periodAndStageVarDict)
     
     return subProblemsList
 
 # set the fixed and optimized variable set for fix and optimize time and stage decomposition_2
 def fixAndOptimize_orderByTimePeriodAndStage_2(initialSolutionDecVarDict, windowSize, overlap, timeLength, numOfUsers, providerList, vmTypeList, vmContractList, vmPaymentList, numOfRouters) :
-    movingSteps = math.ceil(windowSize * overlap)
+    movingSteps = windowSize - math.ceil(windowSize * overlap)
     subProblemsList = []
     
     # count how many windows in time decomposition
@@ -174,11 +177,10 @@ def fixAndOptimize_orderByTimePeriodAndStage_2(initialSolutionDecVarDict, window
         windowPeriod_start = windowPeriodList_start[periodIndex]
         windowPeriod_end = windowPeriodList_end[periodIndex]
         
-        for timeStage in range(0, timeLength) :
-            for stage in [1, 2] :
-                fixedVarDict = dict()
-                optimizedVarDict = dict()
-                
+        for stage in [1, 2] :
+            fixedVarDict = dict()
+            optimizedVarDict = dict()
+            for timeStage in range(0, timeLength) :
                 for providerIndex in range(0, len(providerList)) :
                     provider = providerList[providerIndex]
                     for userIndex in range(0, numOfUsers) :
@@ -218,9 +220,9 @@ def fixAndOptimize_orderByTimePeriodAndStage_2(initialSolutionDecVarDict, window
                     else :
                         fixedVarDict[routerStatusVarName] = initialSolutionDecVarDict[routerStatusVarName]
                 
-                periodAndStageVarDict = dict()
-                periodAndStageVarDict['fix'] = fixedVarDict
-                periodAndStageVarDict['optimize'] = optimizedVarDict
-                subProblemsList.append(periodAndStageVarDict)
+            periodAndStageVarDict = dict()
+            periodAndStageVarDict['fix'] = fixedVarDict
+            periodAndStageVarDict['optimize'] = optimizedVarDict
+            subProblemsList.append(periodAndStageVarDict)
     
     return subProblemsList

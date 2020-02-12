@@ -3,7 +3,7 @@ import math
 
 # define a function to divide the model into multiple sub-problems
 def relaxAndFix_orderByTimePeriodsAscending(windowSize, overlap, timeLength, numOfUsers, providerList, vmTypeList, vmContractList, vmPaymentList, numOfRouters) :
-    movingSteps = math.ceil(windowSize * overlap)
+    movingSteps = windowSize - math.ceil(windowSize * overlap)
     subProblemsList = []
     
     # count how many windows in time decomposition
@@ -97,7 +97,7 @@ def relaxAndFix_orderByTimePeriodsAscending(windowSize, overlap, timeLength, num
 
 # a function used to configure the variable sets of fixed, optimized and relaxed for time and stage decomposition_1
 def relaxAndFix_orderByTimePeriodsAndStagesAscending(windowSize, overlap, timeLength, numOfUsers, providerList, vmTypeList, vmContractList, vmPaymentList, numOfRouters) :
-    movingSteps = math.ceil(windowSize * overlap)
+    movingSteps = windowSize - math.ceil(windowSize * overlap)
     subProblemsList = []
     
     # count how many windows in time decomposition
@@ -121,13 +121,11 @@ def relaxAndFix_orderByTimePeriodsAndStagesAscending(windowSize, overlap, timeLe
         windowPeriod_start = windowPeriodList_start[periodIndex]
         windowPeriod_end = windowPeriodList_end[periodIndex]
         
-        for timeStage in range(0, timeLength) :
-            for stage in [1, 2] :
-                
-                fixedVarDict = dict()
-                optimizedVarDict = dict()
-                relaxedVarDict = dict()
-                
+        for stage in [1, 2] :
+            fixedVarDict = dict()
+            optimizedVarDict = dict()
+            relaxedVarDict = dict()
+            for timeStage in range(0, timeLength) :
                 for providerIndex in range(0, len(providerList)) :
                     provider = providerList[providerIndex]
                     for userIndex in range(0, numOfUsers) :
@@ -179,12 +177,12 @@ def relaxAndFix_orderByTimePeriodsAndStagesAscending(windowSize, overlap, timeLe
                     else :
                         relaxedVarDict[routerStatusVarName] = 0
                 # add three variable sets into a dictionary and add it at the end of the list
-                periodAndStageVarDict = dict()
-                periodAndStageVarDict['fix'] = fixedVarDict
-                periodAndStageVarDict['optimize'] = optimizedVarDict
-                periodAndStageVarDict['relax'] = relaxedVarDict
+            periodAndStageVarDict = dict()
+            periodAndStageVarDict['fix'] = fixedVarDict
+            periodAndStageVarDict['optimize'] = optimizedVarDict
+            periodAndStageVarDict['relax'] = relaxedVarDict
             
-                subProblemsList.append(periodAndStageVarDict)
+            subProblemsList.append(periodAndStageVarDict)
     
     return subProblemsList
 
@@ -192,7 +190,7 @@ def relaxAndFix_orderByTimePeriodsAndStagesAscending(windowSize, overlap, timeLe
 # stage 1 VM reservation
 # stage 2 VM utilization and router bandwidth reservation, utilization
 def relaxAndFix_orderByTimePeriodsAndStagesAscending_2(windowSize, overlap, timeLength, numOfUsers, providerList, vmTypeList, vmContractList, vmPaymentList, numOfRouters) :
-    movingSteps = math.ceil(windowSize * overlap)
+    movingSteps = windowSize - math.ceil(windowSize * overlap)
     subProblemList = []
     
     # count how many windows in time decomposition
@@ -214,13 +212,13 @@ def relaxAndFix_orderByTimePeriodsAndStagesAscending_2(windowSize, overlap, time
     
     for periodIndex in range(0, len(windowPeriodList_start)) :
         windowPeriod_start = windowPeriodList_start[periodIndex]
-        windowPeriod_end = windowPeriodList_end[periodIndex]        
-        for timeStage in range(0, timeLength) :
-            for stage in [1, 2] :
-                fixedVarDict = dict()
-                optimizedVarDict = dict()
-                relaxedVarDict = dict()
-                
+        windowPeriod_end = windowPeriodList_end[periodIndex]   
+        
+        for stage in [1, 2] :
+            fixedVarDict = dict()
+            optimizedVarDict = dict()
+            relaxedVarDict = dict()
+            for timeStage in range(0, timeLength) :        
                 for providerIndex in range(0, len(providerList)) :
                     provider = providerList[providerIndex]
                     for userIndex in range(0, numOfUsers) :
@@ -286,11 +284,11 @@ def relaxAndFix_orderByTimePeriodsAndStagesAscending_2(windowSize, overlap, time
                         # relax router status
                         relaxedVarDict[routerStatusVarName] = 0
                 
-                periodAndStageVarDict = dict()
-                periodAndStageVarDict['fix'] = fixedVarDict
-                periodAndStageVarDict['optimize'] = optimizedVarDict
-                periodAndStageVarDict['relax'] = relaxedVarDict
-                
-                subProblemList.append(periodAndStageVarDict)
+            periodAndStageVarDict = dict()
+            periodAndStageVarDict['fix'] = fixedVarDict
+            periodAndStageVarDict['optimize'] = optimizedVarDict
+            periodAndStageVarDict['relax'] = relaxedVarDict
+            
+            subProblemList.append(periodAndStageVarDict)
     
     return subProblemList
